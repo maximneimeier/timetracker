@@ -192,3 +192,16 @@ button:active {
 .bar-color-5 { background: var(--chart-6); }
 .bar-color-6 { background: var(--chart-7); }
 .bar-color-7 { background: var(--chart-8); }
+
+/* Heatmap intensity colors */
+html[data-theme="dark"] .heatmap-intensity-0 { background: var(--bg-inner); }
+html[data-theme="dark"] .heatmap-intensity-1 { background: rgba(34, 197, 94, 0.3); }
+html[data-theme="dark"] .heatmap-intensity-2 { background: rgba(34, 197, 94, 0.5); }
+html[data-theme="dark"] .heatmap-intensity-3 { background: rgba(34, 197, 94, 0.75); }
+html[data-theme="dark"] .heatmap-intensity-4 { background: rgba(34, 197, 94, 1); }
+
+html[data-theme="light"] .heatmap-intensity-0 { background: var(--bg-inner); }
+html[data-theme="light"] .heatmap-intensity-1 { background: rgba(22, 163, 74, 0.3); }
+html[data-theme="light"] .heatmap-intensity-2 { background: rgba(22, 163, 74, 0.5); }
+html[data-theme="light"] .heatmap-intensity-3 { background: rgba(22, 163, 74, 0.75); }
+html[data-theme="light"] .heatmap-intensity-4 { background: rgba(22, 163, 74, 1); }
