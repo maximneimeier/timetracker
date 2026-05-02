@@ -1,17 +1,35 @@
+import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "./lib/theme";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
 export const metadata = {
-  title: 'Time Tracker',
-  description: 'Minimalist time tracking app',
+  title: "Time Tracker",
+  description: "Minimalist time tracking app",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="de">
-      <body className="bg-[#0f172a] text-white min-h-screen">
-        {children}
+    <html lang="de" data-theme="dark">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

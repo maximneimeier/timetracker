@@ -125,3 +125,33 @@ export function getMonthlySummary(year: number, month: number) {
     entryCount: monthEntries.length
   };
 }
+
+// All-time summary
+export function getAllTimeSummary() {
+  const entries = getEntries();
+  const projects = getProjects();
+  const settings = getSettings();
+  
+  const projectStats = projects.map(project => {
+    const projectEntries = entries.filter(e => e.project_id === project.id);
+    const totalHours = projectEntries.reduce((sum, e) => sum + e.hours, 0);
+    return {
+      project,
+      totalHours,
+      revenue: totalHours * settings.hourly_rate,
+      entries: projectEntries
+    };
+  }).filter(s => s.totalHours > 0)
+    .sort((a, b) => b.totalHours - a.totalHours); // Sort by hours desc
+  
+  const totalHours = projectStats.reduce((sum, s) => sum + s.totalHours, 0);
+  const totalRevenue = projectStats.reduce((sum, s) => sum + s.revenue, 0);
+  
+  return {
+    projectStats,
+    totalHours,
+    totalRevenue,
+    projectCount: projects.length,
+    entryCount: entries.length
+  };
+}
