@@ -8,10 +8,6 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 let supabase: ReturnType<typeof createClient> | null = null;
 
 function getSupabase() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    // Fallsback to localStorage only
-    return null;
-  }
   if (!supabase) {
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   }
@@ -70,7 +66,9 @@ export async function getProjects(): Promise<Project[]> {
 
   if (USE_SUPABASE) {
     try {
-      const { data, error } = await getSupabase().from('projects').select('*').order('created_at', { ascending: false });
+      const sb = getSupabase();
+      if (!sb) throw new Error('Supabase not configured');
+      const { data, error } = await sb.from('projects').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     } catch {

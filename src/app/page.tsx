@@ -752,20 +752,6 @@ export default function Home() {
                         onChange={e => setNewEntry({ ...newEntry, date: e.target.value })}
                       />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Stunden
-                      </label>
-                      <input
-                        type="number"
-                        step="0.25"
-                        min="0"
-                        max="24"
-                        placeholder="z.B. 8"
-                        value={newEntry.hours}
-                        onChange={e => setNewEntry({ ...newEntry, hours: e.target.value })}
-                      />
-                    </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
