@@ -19,6 +19,7 @@ const USE_SUPABASE = false;
 export interface Project {
   id: number;
   name: string;
+  description?: string;
   created_at: string;
 }
 
@@ -110,6 +111,18 @@ export async function addProject(name: string): Promise<Project> {
   return newProject;
 }
 
+export async function updateProject(id: number, updates: Partial<Pick<Project, 'name' | 'description'>>): Promise<Project | null> {
+  if (typeof window === 'undefined') return null;
+
+  const projects = await getProjects();
+  const idx = projects.findIndex(p => p.id === id);
+  if (idx === -1) return null;
+
+  projects[idx] = { ...projects[idx], ...updates };
+  localStorage.setItem('timetracker_projects', JSON.stringify(projects));
+  return projects[idx];
+}
+
 export async function deleteProject(id: number): Promise<void> {
   if (typeof window === 'undefined') return;
 
@@ -171,6 +184,18 @@ export async function addEntry(entry: Omit<TimeEntry, 'id' | 'created_at'>): Pro
   entries.push(newEntry);
   localStorage.setItem('timetracker_entries', JSON.stringify(entries));
   return newEntry;
+}
+
+export async function updateEntry(id: number, updates: Partial<Omit<TimeEntry, 'id' | 'created_at'>>): Promise<TimeEntry | null> {
+  if (typeof window === 'undefined') return null;
+
+  const entries = await getEntries();
+  const idx = entries.findIndex(e => e.id === id);
+  if (idx === -1) return null;
+
+  entries[idx] = { ...entries[idx], ...updates };
+  localStorage.setItem('timetracker_entries', JSON.stringify(entries));
+  return entries[idx];
 }
 
 export async function deleteEntry(id: number): Promise<void> {

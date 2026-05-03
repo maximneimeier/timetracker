@@ -45,6 +45,9 @@ const baseTranslations = {
   wochenansicht: 'Wochenansicht',
   monatsansicht: 'Monatsansicht',
   jahresansicht: 'Jahresansicht',
+  woche: 'Woche',
+  monat: 'Monat',
+  gesamt: 'Gesamt',
   aufgabeLoeschen: 'Aufgabe löschen',
   warnung: 'WARNUNG',
   aufgabeWarnung: 'Die Aufgabe und alle zugehörigen Zeiteinträge werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
@@ -75,8 +78,52 @@ const baseTranslations = {
   dez: 'Dez',
   wochentage: 'Wochentage',
   monatsname: 'Monat',
-  less: 'Weniger',
   more: 'Mehr',
+  less: 'Weniger',
+  add: 'Hinzufügen',
+  allHoursByProject: 'Alle Stunden nach Aufgabe',
+  allTimeReport: 'Gesamtauswertung',
+  cancel: 'Abbrechen',
+  calculatedCosts: 'Kalkulierte Kosten',
+  calculatedHours: 'Berechnete Stunden',
+  confirmDelete: 'Löschen bestätigen',
+  darkMode: 'Dunkel',
+  date: 'Datum',
+  delete: 'Löschen',
+  deleteProjectAndEntries: 'Aufgabe + Einträge löschen',
+  deleteWarning: 'WARNUNG: Die Aufgabe {name} und alle zugehörigen Zeiteinträge werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
+  edit: 'Bearbeiten',
+  entries: 'Einträge',
+  from: 'Von',
+  hourlyRate: 'Stundensatz (EUR)',
+  hoursByProject: 'Stunden nach Aufgabe',
+  language: 'Sprache',
+  lightMode: 'Hell',
+  manageProjects: 'Aufgaben verwalten',
+  manualEntry: 'Manuelle Erfassung',
+  monthlyReport: 'Monatsauswertung',
+  newProjectPlaceholder: 'Neue Aufgabe...',
+  next: 'Weiter',
+  noProjects: 'Noch keine Aufgaben',
+  noWeeklyData: 'Noch keine Wochendaten vorhanden',
+  of: 'von',
+  page: 'Seite',
+  previous: 'Zurück',
+  project: 'Projekt',
+  projects: 'Aufgaben',
+  recentEntries: 'Letzte Einträge',
+  save: 'Speichern',
+  saveEntry: 'Eintrag speichern',
+  saved: 'Gespeichert',
+  selectProject: 'Aufgabe wählen...',
+  settings: 'Einstellungen',
+  theme: 'Modus',
+  to: 'Bis',
+  totalHours: 'Gesamtstunden',
+  unknownProject: 'Unbekannte Aufgabe',
+  weekdays: 'Wochentage',
+  weeklyOverview: 'Wochenansicht',
+  yearlyOverview: 'Jahresansicht',
 } as const;
 
 export type TranslationKey = keyof typeof baseTranslations;
@@ -371,8 +418,14 @@ export function useI18n() {
     setLangState(newLang);
   }, []);
 
-  const translate = useCallback((key: TranslationKey) => {
-    return t(key, lang);
+  const translate = useCallback((key: TranslationKey, params?: Record<string, string | number>) => {
+    let text = t(key, lang);
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        text = text.replace(new RegExp(`{${k}}`, 'g'), String(v));
+      });
+    }
+    return text;
   }, [lang]);
 
   return { lang, setLang, t: translate };

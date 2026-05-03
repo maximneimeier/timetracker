@@ -635,9 +635,9 @@ export default function Home() {
   ];
 
   const reportViewButtons = [
-    { key: 'week' as const, label: t('woche') },
-    { key: 'month' as const, label: t('monat') },
-    { key: 'all' as const, label: t('gesamt') }
+    { key: 'week' as const, label: t('week') },
+    { key: 'month' as const, label: t('month') },
+    { key: 'all' as const, label: t('all') }
   ];
 
   return (
@@ -1452,51 +1452,6 @@ export default function Home() {
                 </div>
               </>
             )}
-          </div>
-        )}
-
-        {/* Revenue Tab */}
-        {activeTab === 'revenue' && (
-          <div className="card" style={{ padding: '24px' }}>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Umsatzübersicht</h2>
-            <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, marginBottom: '16px', color: 'var(--text-secondary)' }}>Monatlicher Umsatz</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gesamtumsatz</div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>{monthlySummary.totalRevenue.toFixed(0)} EUR</div>
-                </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stundensatz</div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>{settings.hourly_rate} EUR</div>
-                </div>
-              </div>
-              {monthlySummary.projectStats.length > 0 && (
-                <div style={{ marginTop: '24px' }}>
-                  <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>Umsatz pro Aufgabe</h3>
-                  <BarChart data={monthlySummary.projectStats.map((s, i) => ({ label: s.project.name, hours: s.revenue, colorIndex: i }))} />
-                </div>
-              )}
-            </div>
-            <div>
-              <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, marginBottom: '16px', color: 'var(--text-secondary)' }}>Jahresumsatz</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gesamtumsatz</div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>{allTimeSummary.totalRevenue.toFixed(0)} EUR</div>
-                </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gesamtstunden</div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>{allTimeSummary.totalHours.toFixed(1)}h</div>
-                </div>
-              </div>
-              {allTimeSummary.projectStats.length > 0 && (
-                <div style={{ marginTop: '24px' }}>
-                  <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>Umsatz pro Aufgabe (gesamt)</h3>
-                  <BarChart data={allTimeSummary.projectStats.map((s, i) => ({ label: s.project.name, hours: s.revenue, colorIndex: i }))} />
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
