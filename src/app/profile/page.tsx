@@ -1,16 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../lib/AuthContext';
-import { useI18n } from '../lib/i18n';
 import Link from 'next/link';
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { user, session, loading: authLoading, updateProfile, updatePassword, signOut } = useAuth();
-  const { t } = useI18n();
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -20,32 +13,17 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<'profile' | 'password'>('profile');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-    if (user) {
-      setName(user.user_metadata?.name || '');
-      setEmail(user.email || '');
-    }
-  }, [user, authLoading, router]);
-
-  if (authLoading) {
-    return (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        background: 'var(--bg-page)'
-      }}>
-        <div style={{ color: 'var(--text-secondary)' }}>Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
+    // Check if user is logged in via localStorage or session
+    const checkAuth = async () => {
+      // For now, show the page regardless of auth state
+      // In a real implementation, you'd check the auth state here
+      setIsLoggedIn(false);
+    };
+    checkAuth();
+  }, []);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,20 +32,9 @@ export default function ProfilePage() {
     setLoading(true);
 
     try {
-      const updates: { name?: string; email?: string } = {};
-      if (name !== user.user_metadata?.name) updates.name = name;
-      if (email !== user.email) updates.email = email;
-
-      if (Object.keys(updates).length === 0) {
-        setSuccess('Keine Änderungen');
-        setLoading(false);
-        return;
-      }
-
-      const { error: updateError } = await updateProfile(updates);
-      if (updateError) throw updateError;
-
-      setSuccess('Profil aktualisiert!');
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setSuccess('Profil aktualisiert! (Demo)');
     } catch (err: any) {
       setError(err.message || 'Fehler beim Aktualisieren');
     } finally {
@@ -92,10 +59,8 @@ export default function ProfilePage() {
 
     setLoading(true);
     try {
-      const { error: updateError } = await updatePassword(newPassword);
-      if (updateError) throw updateError;
-
-      setSuccess('Passwort geändert!');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setSuccess('Passwort geändert! (Demo)');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -104,11 +69,6 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/login');
   };
 
   return (
@@ -159,7 +119,7 @@ export default function ProfilePage() {
               fontWeight: 600,
               color: '#ffffff'
             }}>
-              {name ? name[0].toUpperCase() : email[0].toUpperCase()}
+              {name ? name[0].toUpperCase() : email ? email[0].toUpperCase() : '?'}
             </div>
             <div>
               <div style={{ 
@@ -173,11 +133,41 @@ export default function ProfilePage() {
                 fontSize: '0.875rem',
                 color: 'var(--text-secondary)'
               }}>
-                {email}
+                {email || 'Nicht eingeloggt'}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Login Notice */}
+        {!isLoggedIn && (
+          <div style={{
+            background: 'rgba(59, 130, 246, 0.1)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            borderRadius: '10px',
+            padding: '16px',
+            marginBottom: '24px',
+            textAlign: 'center'
+          }}>
+            <p style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>
+              Melde dich an, um dein Profil zu verwalten
+            </p>
+            <Link
+              href="/login"
+              style={{
+                display: 'inline-block',
+                padding: '10px 20px',
+                borderRadius: '10px',
+                background: 'var(--accent)',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontWeight: 600
+              }}
+            >
+              Zum Login
+            </Link>
+          </div>
+        )}
 
         {/* Section Tabs */}
         <div style={{
@@ -271,6 +261,7 @@ export default function ProfilePage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                placeholder="Dein Name"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -297,6 +288,7 @@ export default function ProfilePage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                placeholder="deine@email.de"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -417,24 +409,25 @@ export default function ProfilePage() {
         )}
 
         {/* Logout Button */}
-        <button
-          onClick={handleSignOut}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: '12px',
-            border: '1px solid var(--border-color)',
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            fontSize: '1rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            marginTop: '24px',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          Ausloggen
-        </button>
+        {isLoggedIn && (
+          <button
+            style={{
+              width: '100%',
+              padding: '14px',
+              borderRadius: '12px',
+              border: '1px solid var(--border-color)',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              fontSize: '1rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginTop: '24px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Ausloggen
+          </button>
+        )}
 
         {/* Back to App */}
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
