@@ -581,8 +581,8 @@ export default function Home() {
 
   const tabButtons = [
     { key: 'timer' as const, label: t('timer') },
-    { key: 'projects' as const, label: t('projects') },
-    { key: 'reports' as const, label: t('reports') }
+    { key: 'projects' as const, label: t('aufgaben') },
+    { key: 'reports' as const, label: t('auswertung') }
   ];
 
   const reportViewButtons = [
