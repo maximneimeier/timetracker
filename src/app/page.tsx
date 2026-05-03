@@ -854,6 +854,29 @@ export default function Home() {
                 >
                   {settingsSaved ? t('saved') : t('save')}
                 </button>
+
+                <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '8px 0' }} />
+
+                <a
+                  href="/profile"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-inner)',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.9375rem',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  👤 Profil bearbeiten
+                </a>
               </div>
             )}
           </div>
