@@ -18,7 +18,19 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
+            echo "=== Starting Deploy ==="
+            echo "User: $(whoami)"
+            echo "PWD: $(pwd)"
+            
             cd /home/jarvis-helper/timetracker
+            echo "=== Git Pull ==="
             git pull origin main
+            
+            echo "=== Docker Build ==="
             docker compose up -d --build
+            
+            echo "=== Verify ==="
             docker ps | grep timetracker
+            
+            echo "=== Deploy Complete ==="
