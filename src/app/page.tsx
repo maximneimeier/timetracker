@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from './lib/theme';
 import {
   getProjects,
@@ -48,8 +48,36 @@ function SunIcon({ className }: { className?: string }) {
   );
 }
 
+// Tooltip Component
+function Tooltip({ show, x, y, text }: { show: boolean; x: number; y: number; text: string }) {
+  if (!show) return null;
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: x,
+        top: y,
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '6px',
+        padding: '6px 10px',
+        fontSize: '0.75rem',
+        color: 'var(--text-primary)',
+        zIndex: 1000,
+        pointerEvents: 'none',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        whiteSpace: 'nowrap'
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
 // Stacked Bar Chart Component for Weekly View
-function StackedBarChart({ data, maxHours }: { data: { name: string; projectHours: { project: Project; hours: number; colorIndex: number }[]; totalHours: number }[]; maxHours: number }) {
+function StackedBarChart({ data }: { data: { name: string; projectHours: { project: Project; hours: number; colorIndex: number }[]; totalHours: number }[] }) {
+  const [tooltip, setTooltip] = useState<{ show: boolean; x: number; y: number; text: string }>({ show: false, x: 0, y: 0, text: '' });
+
   if (data.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
@@ -58,61 +86,100 @@ function StackedBarChart({ data, maxHours }: { data: { name: string; projectHour
     );
   }
 
-  const chartHeight = 160;
+  const maxHours = Math.max(...data.map(d => d.totalHours), 0.1);
+  const chartHeight = 180;
+  const yAxisSteps = 5;
+  const yAxisMax = Math.ceil(maxHours * 1.1);
+
+  const handleSegmentEnter = (e: React.MouseEvent, ph: { project: Project; hours: number }) => {
+    setTooltip({
+      show: true,
+      x: e.clientX + 10,
+      y: e.clientY - 40,
+      text: `${ph.project.name}: ${ph.hours.toFixed(1)}h`
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setTooltip(prev => ({ ...prev, x: e.clientX + 10, y: e.clientY - 40 }));
+  };
+
+  const handleMouseLeave = () => {
+    setTooltip(prev => ({ ...prev, show: false }));
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      {/* Chart Area */}
-      <div style={{ display: 'flex', gap: '8px', height: `${chartHeight}px`, alignItems: 'flex-end', padding: '0 0 8px 0' }}>
-        {data.map((day, dayIdx) => {
-          const barHeightPercent = day.totalHours > 0 ? (day.totalHours / maxHours) * 100 : 0;
-          return (
-            <div key={dayIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-              {/* Bar */}
-              <div
-                style={{
-                  width: '100%',
-                  height: `${barHeightPercent}%`,
-                  minHeight: day.totalHours > 0 ? '4px' : '0',
-                  background: day.projectHours.length === 0 ? 'var(--bg-inner)' : undefined,
-                  borderRadius: '6px',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column-reverse'
-                }}
-              >
-                {day.projectHours.map((ph, phIdx) => {
-                  const colorClass = `bar-color-${ph.colorIndex % 8}`;
-                  const segmentHeightPercent = day.totalHours > 0 ? (ph.hours / day.totalHours) * 100 : 0;
-                  return (
-                    <div
-                      key={phIdx}
-                      className={colorClass}
-                      style={{
-                        width: '100%',
-                        height: `${segmentHeightPercent}%`,
-                        minHeight: ph.hours > 0 ? '2px' : '0',
-                        transition: 'all 0.3s ease'
-                      }}
-                      title={`${ph.project.name}: ${ph.hours.toFixed(1)}h`}
-                    />
-                  );
-                })}
-              </div>
-              {/* Day Label */}
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                {day.name}
-              </span>
-              {/* Total Hours */}
-              {day.totalHours > 0 && (
-                <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }}>
-                  {day.totalHours.toFixed(1)}h
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {/* Y-Axis */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: `${chartHeight}px`, paddingRight: '8px', borderRight: '1px solid var(--border-color)' }}>
+          {Array.from({ length: yAxisSteps + 1 }, (_, i) => (
+            <span key={i} style={{ fontSize: '0.625rem', color: 'var(--text-muted)', textAlign: 'right', lineHeight: '1' }}>
+              {((yAxisMax / yAxisSteps) * (yAxisSteps - i)).toFixed(0)}h
+            </span>
+          ))}
+        </div>
+
+        {/* Chart Area */}
+        <div style={{ flex: 1, display: 'flex', gap: '8px', height: `${chartHeight}px`, alignItems: 'flex-end', padding: '0 0 8px 0' }}>
+          {data.map((day, dayIdx) => {
+            const barHeightPercent = day.totalHours > 0 ? (day.totalHours / yAxisMax) * 100 : 0;
+            return (
+              <div key={dayIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                {/* Bar */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: `${barHeightPercent}%`,
+                    minHeight: day.totalHours > 0 ? '4px' : '0',
+                    background: day.projectHours.length === 0 ? 'var(--bg-inner)' : undefined,
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column-reverse'
+                  }}
+                >
+                  {day.projectHours.map((ph, phIdx) => {
+                    const colorClass = `bar-color-${ph.colorIndex % 8}`;
+                    const segmentHeightPercent = day.totalHours > 0 ? (ph.hours / day.totalHours) * 100 : 0;
+                    return (
+                      <div
+                        key={phIdx}
+                        className={colorClass}
+                        style={{
+                          width: '100%',
+                          height: `${segmentHeightPercent}%`,
+                          minHeight: ph.hours > 0 ? '2px' : '0',
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => handleSegmentEnter(e, ph)}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={handleMouseLeave}
+                      />
+                    );
+                  })}
+                </div>
+                {/* Day Label */}
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  {day.name}
                 </span>
-              )}
-            </div>
-          );
-        })}
+                {/* Total Hours */}
+                {day.totalHours > 0 && (
+                  <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }}>
+                    {day.totalHours.toFixed(1)}h
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
+      {/* X-Axis Label */}
+      <div style={{ textAlign: 'center', fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: '-4px', marginLeft: '32px' }}>
+        Wochentage
+      </div>
+      <Tooltip {...tooltip} />
     </div>
   );
 }
@@ -120,7 +187,7 @@ function StackedBarChart({ data, maxHours }: { data: { name: string; projectHour
 // Bar Chart Component
 function BarChart({ data }: { data: { label: string; hours: number; colorIndex: number }[] }) {
   const maxHours = Math.max(...data.map(d => d.hours), 1);
-  
+
   if (data.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
@@ -135,7 +202,7 @@ function BarChart({ data }: { data: { label: string; hours: number; colorIndex: 
         const widthPercent = (item.hours / maxHours) * 100;
         const colorClass = `bar-color-${item.colorIndex % 8}`;
         const textColorClass = `project-color-${item.colorIndex % 8}`;
-        
+
         return (
           <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -146,20 +213,20 @@ function BarChart({ data }: { data: { label: string; hours: number; colorIndex: 
                 {item.hours.toFixed(1)}h
               </span>
             </div>
-            <div 
-              style={{ 
-                width: '100%', 
-                borderRadius: '9999px', 
+            <div
+              style={{
+                width: '100%',
+                borderRadius: '9999px',
                 overflow: 'hidden',
-                background: 'var(--bg-inner)', 
-                height: '28px' 
+                background: 'var(--bg-inner)',
+                height: '28px'
               }}
             >
               <div
                 className={colorClass}
-                style={{ 
-                  height: '100%', 
-                  borderRadius: '9999px', 
+                style={{
+                  height: '100%',
+                  borderRadius: '9999px',
                   transition: 'all 0.7s ease-out',
                   width: `${widthPercent}%`,
                   minWidth: item.hours > 0 ? '4px' : '0'
@@ -216,7 +283,7 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
           </div>
         ))}
       </div>
-      
+
       {/* Heatmap Grid */}
       <div style={{ display: 'flex', gap: '4px' }}>
         {/* Day labels */}
@@ -227,7 +294,7 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
             </div>
           ))}
         </div>
-        
+
         {/* Weeks */}
         <div style={{ display: 'flex', gap: '2px' }}>
           {data.map((week, weekIdx) => (
@@ -274,27 +341,7 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
         <span>Mehr</span>
       </div>
 
-      {/* Tooltip */}
-      {tooltip.show && (
-        <div
-          style={{
-            position: 'fixed',
-            left: tooltip.x,
-            top: tooltip.y,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '6px',
-            padding: '6px 10px',
-            fontSize: '0.75rem',
-            color: 'var(--text-primary)',
-            zIndex: 1000,
-            pointerEvents: 'none',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-          }}
-        >
-          {tooltip.text}
-        </div>
-      )}
+      <Tooltip {...tooltip} />
     </div>
   );
 }
@@ -302,6 +349,7 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'timer' | 'projects' | 'reports' | 'settings'>('timer');
+  const [reportView, setReportView] = useState<'week' | 'month' | 'all'>('week');
   const [projects, setProjects] = useState<Project[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [settings, setSettings] = useState({ hourly_rate: 150 });
@@ -359,18 +407,18 @@ export default function Home() {
   // Timer interval with auto-stop after 6 hours
   useEffect(() => {
     if (!timerRunning) return;
-    
+
     const interval = setInterval(() => {
       const now = Date.now();
       const elapsed = Math.floor((now - timerStartTimestamp) / 1000);
       setElapsedSeconds(elapsed);
-      
+
       // Auto-stop after 6 hours (21600 seconds)
       if (elapsed >= 21600) {
         handleStopTimer();
       }
     }, 1000);
-    
+
     return () => clearInterval(interval);
   }, [timerRunning, timerStartTimestamp]);
 
@@ -394,7 +442,7 @@ export default function Home() {
     });
   };
 
-  const handleStopTimer = async () => {
+  const handleStopTimer = useCallback(async () => {
     if (!timerRunning) return;
     const durationHours = elapsedSeconds / 3600;
     const startTime = new Date(timerStartTimestamp);
@@ -411,12 +459,12 @@ export default function Home() {
       is_timer: true,
     });
 
-    setEntries([...entries, entry]);
+    setEntries(prev => [...prev, entry]);
     setTimerRunning(false);
     setTimerProjectId(0);
     setElapsedSeconds(0);
     clearTimerState();
-  };
+  }, [timerRunning, elapsedSeconds, timerStartTimestamp, timerProjectId]);
 
   const handleAddProject = async () => {
     if (!newProject.trim()) return;
@@ -448,7 +496,7 @@ export default function Home() {
     const [eh, em] = newEntry.end_time.split(':').map(Number);
     const diffMinutes = (eh * 60 + em) - (sh * 60 + sm);
     const hours = Math.max(0, diffMinutes / 60);
-    
+
     const entry = await addEntry({
       project_id: Number(newEntry.project_id),
       date: newEntry.date,
@@ -512,11 +560,17 @@ export default function Home() {
   }));
 
   const tabButtons = [
-    { key: 'timer', label: 'Timer' },
-    { key: 'projects', label: 'Projekte' },
-    { key: 'reports', label: 'Auswertung' },
-    { key: 'settings', label: 'Einstellungen' }
-  ] as const;
+    { key: 'timer' as const, label: 'Timer' },
+    { key: 'projects' as const, label: 'Aufgaben' },
+    { key: 'reports' as const, label: 'Auswertung' },
+    { key: 'settings' as const, label: 'Einstellungen' }
+  ];
+
+  const reportViewButtons = [
+    { key: 'week' as const, label: 'Woche' },
+    { key: 'month' as const, label: 'Monat' },
+    { key: 'all' as const, label: 'Gesamt' }
+  ];
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '60px' }}>
@@ -549,10 +603,10 @@ export default function Home() {
             onClick={e => e.stopPropagation()}
           >
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '12px', color: 'var(--text-primary)' }}>
-              Projekt löschen
+              Aufgabe löschen
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '20px', lineHeight: 1.5 }}>
-              WARNUNG: Das Projekt &quot;{deleteModal.project?.name}&quot; und alle zugehörigen Zeiteinträge werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+              WARNUNG: Die Aufgabe &quot;{deleteModal.project?.name}&quot; und alle zugehörigen Zeiteinträge werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
             </p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
@@ -585,7 +639,7 @@ export default function Home() {
                   cursor: 'pointer'
                 }}
               >
-                Projekt + Einträge löschen
+                Aufgabe + Einträge löschen
               </button>
             </div>
           </div>
@@ -657,19 +711,19 @@ export default function Home() {
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
                   Live Timer
                 </h2>
-                
+
                 {!timerRunning ? (
                   <div>
                     <div style={{ marginBottom: '16px' }}>
                       <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Projekt
+                        Aufgabe
                       </label>
                       <select
                         value={timerProjectId}
                         onChange={e => setTimerProjectId(Number(e.target.value))}
                         style={{ width: '100%' }}
                       >
-                        <option value={0}>Projekt wählen...</option>
+                        <option value={0}>Aufgabe wählen...</option>
                         {projects.map(p => (
                           <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
@@ -728,14 +782,14 @@ export default function Home() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      Projekt
+                      Aufgabe
                     </label>
                     <select
                       value={newEntry.project_id}
                       onChange={e => setNewEntry({ ...newEntry, project_id: Number(e.target.value) })}
                       style={{ width: '100%' }}
                     >
-                      <option value={0}>Projekt wählen...</option>
+                      <option value={0}>Aufgabe wählen...</option>
                       {projects.map(p => (
                         <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
@@ -818,7 +872,7 @@ export default function Home() {
                   Seite {entriesPage} / {totalPages}
                 </span>
               </div>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {paginatedEntries.length === 0 ? (
                   <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
@@ -843,7 +897,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                              {project?.name || 'Unbekanntes Projekt'}
+                              {project?.name || 'Unbekannte Aufgabe'}
                             </span>
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                               {entry.date}
@@ -921,13 +975,13 @@ export default function Home() {
         {activeTab === 'projects' && (
           <div className="card" style={{ padding: '24px' }}>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-              Projekte verwalten
+              Aufgaben verwalten
             </h2>
-            
+
             <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
               <input
                 type="text"
-                placeholder="Neues Projekt..."
+                placeholder="Neue Aufgabe..."
                 value={newProject}
                 onChange={e => setNewProject(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddProject()}
@@ -953,7 +1007,7 @@ export default function Home() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {projects.length === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                  Noch keine Projekte vorhanden. Erstelle dein erstes Projekt!
+                  Noch keine Aufgaben vorhanden. Erstelle deine erste Aufgabe!
                 </p>
               ) : (
                 projects.map(project => (
@@ -996,147 +1050,190 @@ export default function Home() {
         {/* Reports Tab */}
         {activeTab === 'reports' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Weekly Overview */}
-            <div className="card" style={{ padding: '24px' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-                Wochenübersicht
-              </h2>
-              {weeklySummary.days.some(d => d.totalHours > 0) ? (
-                <>
-                  <StackedBarChart data={weeklySummary.days} maxHours={Math.max(weeklySummary.maxHours, 8)} />
-                  {/* Legend */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
-                    {projects.map((p, idx) => {
-                      const colorClass = `bar-color-${idx % 8}`;
-                      return (
-                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <div className={colorClass} style={{ width: '12px', height: '12px', borderRadius: '3px' }} />
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.name}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                  Noch keine Einträge in dieser Woche.
-                </p>
-              )}
+            {/* Report View Toggle */}
+            <div className="tab-bar" style={{ display: 'flex', gap: '4px' }}>
+              {reportViewButtons.map(view => (
+                <button
+                  key={view.key}
+                  onClick={() => setReportView(view.key)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    border: 'none',
+                    background: reportView === view.key ? 'var(--accent)' : 'transparent',
+                    color: reportView === view.key ? '#ffffff' : 'var(--text-secondary)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={e => {
+                    if (reportView !== view.key) {
+                      e.currentTarget.style.background = 'var(--bg-hover)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (reportView !== view.key) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                    }
+                  }}
+                >
+                  {view.label}
+                </button>
+              ))}
             </div>
 
-            {/* Yearly Heatmap */}
-            <div className="card" style={{ padding: '24px' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-                Jahresübersicht {heatmapYear}
-              </h2>
-              <Heatmap data={yearlyHeatmap} year={heatmapYear} />
-            </div>
+            {/* Weekly Overview */}
+            {reportView === 'week' && (
+              <div className="card" style={{ padding: '24px' }}>
+                <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
+                  Wochenübersicht
+                </h2>
+                {weeklySummary.days.some(d => d.totalHours > 0) ? (
+                  <>
+                    <StackedBarChart data={weeklySummary.days} />
+                    {/* Legend */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
+                      {projects.map((p, idx) => {
+                        const colorClass = `bar-color-${idx % 8}`;
+                        return (
+                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div className={colorClass} style={{ width: '12px', height: '12px', borderRadius: '3px' }} />
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
+                    Noch keine Einträge in dieser Woche.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Monthly Report */}
-            <div className="card" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Monatsauswertung
-                </h2>
-                <input
-                  type="month"
-                  value={reportMonth}
-                  onChange={e => setReportMonth(e.target.value)}
-                  style={{ width: 'auto' }}
-                />
-              </div>
-              
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
-                gap: '12px',
-                marginBottom: '28px' 
-              }}>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Gesamtstunden
-                  </div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>
-                    {monthlySummary.totalHours.toFixed(1)}h
-                  </div>
+            {reportView === 'month' && (
+              <div className="card" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Monatsauswertung
+                  </h2>
+                  <input
+                    type="month"
+                    value={reportMonth}
+                    onChange={e => setReportMonth(e.target.value)}
+                    style={{ width: 'auto' }}
+                  />
                 </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Kalkulierte Kosten
-                  </div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>
-                    {monthlySummary.totalRevenue.toFixed(0)} EUR
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Einträge
-                  </div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {monthlySummary.entryCount}
-                  </div>
-                </div>
-              </div>
 
-              {/* Monthly Bar Chart */}
-              {monthlyChartData.length > 0 && (
-                <div style={{ marginTop: '8px' }}>
-                  <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                    Stunden nach Projekt
-                  </h3>
-                  <BarChart data={monthlyChartData} />
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: '12px',
+                  marginBottom: '28px'
+                }}>
+                  <div className="stat-card">
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Gesamtstunden
+                    </div>
+                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>
+                      {monthlySummary.totalHours.toFixed(1)}h
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Kalkulierte Kosten
+                    </div>
+                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>
+                      {monthlySummary.totalRevenue.toFixed(0)} EUR
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Einträge
+                    </div>
+                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {monthlySummary.entryCount}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Monthly Bar Chart */}
+                {monthlyChartData.length > 0 && (
+                  <div style={{ marginTop: '8px' }}>
+                    <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                      Stunden nach Aufgabe
+                    </h3>
+                    <BarChart data={monthlyChartData} />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* All Time Report */}
-            <div className="card" style={{ padding: '24px' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-                Gesamtauswertung
-              </h2>
-              
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
-                gap: '12px',
-                marginBottom: '28px' 
-              }}>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Gesamtstunden
-                  </div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>
-                    {allTimeSummary.totalHours.toFixed(1)}h
-                  </div>
+            {reportView === 'all' && (
+              <>
+                {/* Yearly Heatmap */}
+                <div className="card" style={{ padding: '24px' }}>
+                  <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
+                    Jahresübersicht {heatmapYear}
+                  </h2>
+                  <Heatmap data={yearlyHeatmap} year={heatmapYear} />
                 </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Kalkulierte Kosten
-                  </div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>
-                    {allTimeSummary.totalRevenue.toFixed(0)} EUR
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Projekte
-                  </div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {allTimeSummary.projectCount}
-                  </div>
-                </div>
-              </div>
 
-              {/* All-Time Bar Chart */}
-              {allTimeChartData.length > 0 && (
-                <div style={{ marginTop: '8px' }}>
-                  <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                    Alle Stunden nach Projekt
-                  </h3>
-                  <BarChart data={allTimeChartData} />
+                <div className="card" style={{ padding: '24px' }}>
+                  <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
+                    Gesamtauswertung
+                  </h2>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                    gap: '12px',
+                    marginBottom: '28px'
+                  }}>
+                    <div className="stat-card">
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Gesamtstunden
+                      </div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>
+                        {allTimeSummary.totalHours.toFixed(1)}h
+                      </div>
+                    </div>
+                    <div className="stat-card">
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Kalkulierte Kosten
+                      </div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>
+                        {allTimeSummary.totalRevenue.toFixed(0)} EUR
+                      </div>
+                    </div>
+                    <div className="stat-card">
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Aufgaben
+                      </div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {allTimeSummary.projectCount}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* All-Time Bar Chart */}
+                  {allTimeChartData.length > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                        Alle Stunden nach Aufgabe
+                      </h3>
+                      <BarChart data={allTimeChartData} />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         )}
 
