@@ -1,27 +1,19 @@
-version: '3.8'
-
+name: timetracker
 services:
   timetracker:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     container_name: timetracker
     restart: unless-stopped
-    environment:
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    networks:
+      - web
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.timetracker.rule=Host(`timetracker.atks-ops.de`)"
-      - "traefik.http.routers.timetracker.entrypoints=websecure"
-      - "traefik.http.routers.timetracker.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.timetracker.entrypoints=web"
       - "traefik.http.services.timetracker.loadbalancer.server.port=80"
-    networks:
-      - traefik
 
 networks:
-  traefik:
+  web:
     external: true
