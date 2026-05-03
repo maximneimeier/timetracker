@@ -7,9 +7,4 @@ services:
     container_name: timetracker
     restart: unless-stopped
     ports:
-      - "3000:80"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.timetracker.rule=Host(`timetracker.atks-ops.de`)"
-      - "traefik.http.routers.timetracker.entrypoints=web"
-      - "traefik.http.services.timetracker.loadbalancer.server.port=80"
+      - "80:80"
