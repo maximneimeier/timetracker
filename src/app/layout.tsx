@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "./lib/theme";
+import { AuthProvider } from "./lib/AuthContext";
 import { I18nProvider } from "./components/I18nProvider";
 import "./globals.css";
 
@@ -29,9 +30,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <I18nProvider>
-            {children}
-          </I18nProvider>
+          <AuthProvider>
+            <I18nProvider>
+              {children}
+            </I18nProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

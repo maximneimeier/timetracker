@@ -1,31 +1,43 @@
-// Hybrid storage: localStorage for now, Supabase later
+'use client';
+
 import { createClient } from '@supabase/supabase-js';
 
-// NOTE: Set these via environment variables or .env.local file
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 let supabase: ReturnType<typeof createClient> | null = null;
 
-function getSupabase() {
+function getSupabase(): any {
   if (!supabase) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
   return supabase;
 }
 
-const USE_SUPABASE = false;
+// Check if user is authenticated
+export async function isAuthenticated(): Promise<boolean> {
+  const { data } = await getSupabase().auth.getSession();
+  return !!data.session;
+}
+
+// Get current user ID
+export async function getCurrentUserId(): Promise<string | null> {
+  const { data } = await getSupabase().auth.getSession();
+  return data.session?.user?.id || null;
+}
 
 export interface Project {
-  id: number;
+  id: string;
+  user_id: string;
   name: string;
   description?: string;
   created_at: string;
 }
 
 export interface TimeEntry {
-  id: number;
-  project_id: number;
+  id: string;
+  user_id: string;
+  project_id: string;
   date: string;
   hours: number;
   description: string;
@@ -37,15 +49,41 @@ export interface TimeEntry {
 
 export interface TimerState {
   running: boolean;
-  project_id: number;
+  project_id: string;
   start_timestamp: number;
 }
 
 export interface Settings {
+  id?: string;
+  user_id: string;
   hourly_rate: number;
 }
 
 export type Language = 'de' | 'en' | 'es' | 'fr' | 'ru';
+
+// Legacy localStorage interfaces (for migration)
+interface LegacyProject {
+  id: number;
+  name: string;
+  description?: string;
+  created_at: string;
+}
+
+interface LegacyTimeEntry {
+  id: number;
+  project_id: number;
+  date: string;
+  hours: number;
+  description: string;
+  start_time?: string;
+  end_time?: string;
+  is_timer?: boolean;
+  created_at: string;
+}
+
+interface LegacySettings {
+  hourly_rate: number;
+}
 
 // Initialize default data
 function initStorage() {
@@ -65,81 +103,225 @@ function initStorage() {
   }
 }
 
+// Migrate localStorage data to Supabase
+export async function migrateLocalDataToSupabase(userId: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  
+  const migrationKey = `timetracker_migrated_${userId}`;
+  if (localStorage.getItem(migrationKey)) return; // Already migrated
+
+  const sb = getSupabase();
+  
+  // Get local data
+  const localProjects: LegacyProject[] = JSON.parse(localStorage.getItem('timetracker_projects') || '[]');
+  const localEntries: LegacyTimeEntry[] = JSON.parse(localStorage.getItem('timetracker_entries') || '[]');
+  const localSettings: LegacySettings = JSON.parse(localStorage.getItem('timetracker_settings') || '{"hourly_rate":150}');
+
+  if (localProjects.length === 0 && localEntries.length === 0) {
+    localStorage.setItem(migrationKey, 'true');
+    return;
+  }
+
+  // Check if user already has data in Supabase
+  const { data: existingProjects } = await sb.from('projects').select('id').eq('user_id', userId).limit(1);
+  const { data: existingEntries } = await sb.from('time_entries').select('id').eq('user_id', userId).limit(1);
+
+  if ((existingProjects && existingProjects.length > 0) || (existingEntries && existingEntries.length > 0)) {
+    // User already has data in Supabase, skip migration
+    localStorage.setItem(migrationKey, 'true');
+    return;
+  }
+
+  // Migrate projects
+  const projectIdMap = new Map<number, string>();
+  
+  for (const project of localProjects) {
+    const { data: newProject, error } = await sb
+      .from('projects')
+      .insert({
+        user_id: userId,
+        name: project.name,
+        description: project.description,
+        created_at: project.created_at,
+      })
+      .select()
+      .single();
+    
+    if (!error && newProject) {
+      projectIdMap.set(project.id, (newProject).id);
+    }
+  }
+
+  // Migrate time entries
+  for (const entry of localEntries) {
+    const newProjectId = projectIdMap.get(entry.project_id);
+    if (newProjectId) {
+      await sb.from('time_entries').insert({
+        user_id: userId,
+        project_id: newProjectId,
+        date: entry.date,
+        hours: entry.hours,
+        description: entry.description,
+        start_time: entry.start_time,
+        end_time: entry.end_time,
+        is_timer: entry.is_timer,
+        created_at: entry.created_at,
+      });
+    }
+  }
+
+  // Migrate settings
+  const { data: existingSettings } = await sb.from('settings').select('id').eq('user_id', userId).single();
+  if (!existingSettings) {
+    await sb.from('settings').insert({
+      user_id: userId,
+      hourly_rate: localSettings.hourly_rate,
+    });
+  }
+
+  // Mark as migrated
+  localStorage.setItem(migrationKey, 'true');
+}
+
 // ============ Projects ============
 
 export async function getProjects(): Promise<Project[]> {
   if (typeof window === 'undefined') return [];
 
-  if (USE_SUPABASE) {
+  const userId = await getCurrentUserId();
+  if (userId) {
     try {
       const sb = getSupabase();
-      if (!sb) throw new Error('Supabase not configured');
-      const { data, error } = await sb.from('projects').select('*').order('created_at', { ascending: false });
+      const { data, error } = await sb
+        .from('projects')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     } catch {
-      // Fallback
+      // Fallback to localStorage
     }
   }
 
   initStorage();
-  return JSON.parse(localStorage.getItem('timetracker_projects') || '[]');
+  const localProjects: LegacyProject[] = JSON.parse(localStorage.getItem('timetracker_projects') || '[]');
+  return localProjects.map(p => ({
+    id: String(p.id),
+    user_id: '',
+    name: p.name,
+    description: p.description,
+    created_at: p.created_at,
+  }));
 }
 
 export async function addProject(name: string): Promise<Project> {
   if (typeof window === 'undefined') throw new Error('Not in browser');
 
-  const newProject: Project = {
-    id: Date.now(),
-    name,
-    created_at: new Date().toISOString()
-  };
+  const userId = await getCurrentUserId();
+  const timestamp = new Date().toISOString();
 
-  if (USE_SUPABASE) {
+  if (userId) {
     try {
-      const { data, error } = await getSupabase().from('projects').insert([{ name }] as any).select().single();
+      const sb = getSupabase();
+      const { data, error } = await sb
+        .from('projects')
+        .insert({ user_id: userId, name })
+        .select()
+        .single();
       if (error) throw error;
       if (data) return data as Project;
     } catch {
-      // Fallback
+      // Fallback to localStorage
     }
   }
 
-  const projects = await getProjects();
-  projects.push(newProject);
-  localStorage.setItem('timetracker_projects', JSON.stringify(projects));
-  return newProject;
+  // Fallback to localStorage
+  const localProjects: LegacyProject[] = JSON.parse(localStorage.getItem('timetracker_projects') || '[]');
+  const newProject: LegacyProject = {
+    id: Date.now(),
+    name,
+    created_at: timestamp,
+  };
+  localProjects.push(newProject);
+  localStorage.setItem('timetracker_projects', JSON.stringify(localProjects));
+  
+  return {
+    id: String(newProject.id),
+    user_id: userId || '',
+    name: newProject.name,
+    description: newProject.description,
+    created_at: newProject.created_at,
+  };
 }
 
-export async function updateProject(id: number, updates: Partial<Pick<Project, 'name' | 'description'>>): Promise<Project | null> {
+export async function updateProject(id: string, updates: Partial<Pick<Project, 'name' | 'description'>>): Promise<Project | null> {
   if (typeof window === 'undefined') return null;
 
-  const projects = await getProjects();
-  const idx = projects.findIndex(p => p.id === id);
-  if (idx === -1) return null;
-
-  projects[idx] = { ...projects[idx], ...updates };
-  localStorage.setItem('timetracker_projects', JSON.stringify(projects));
-  return projects[idx];
-}
-
-export async function deleteProject(id: number): Promise<void> {
-  if (typeof window === 'undefined') return;
-
-  if (USE_SUPABASE) {
+  const userId = await getCurrentUserId();
+  
+  if (userId) {
     try {
-      await getSupabase().from('time_entries').delete().eq('project_id', id);
-      await getSupabase().from('projects').delete().eq('id', id);
-      return;
+      const sb = getSupabase();
+      const { data, error } = await sb
+        .from('projects')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) return data as Project;
     } catch {
-      // Fallback
+      // Fallback to localStorage
     }
   }
 
-  const projects = (await getProjects()).filter(p => p.id !== id);
-  localStorage.setItem('timetracker_projects', JSON.stringify(projects));
-  const entries = (await getEntries()).filter(e => e.project_id !== id);
-  localStorage.setItem('timetracker_entries', JSON.stringify(entries));
+  // Fallback to localStorage
+  const localProjects: LegacyProject[] = JSON.parse(localStorage.getItem('timetracker_projects') || '[]');
+  const numId = parseInt(id, 10);
+  const idx = localProjects.findIndex(p => p.id === numId);
+  if (idx === -1) return null;
+
+  localProjects[idx] = { ...localProjects[idx], ...updates };
+  localStorage.setItem('timetracker_projects', JSON.stringify(localProjects));
+  
+  return {
+    id: String(localProjects[idx].id),
+    user_id: userId || '',
+    name: localProjects[idx].name,
+    description: localProjects[idx].description,
+    created_at: localProjects[idx].created_at,
+  };
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const userId = await getCurrentUserId();
+
+  if (userId) {
+    try {
+      const sb = getSupabase();
+      // Delete related time entries first
+      await sb.from('time_entries').delete().eq('project_id', id).eq('user_id', userId);
+      // Delete project
+      await sb.from('projects').delete().eq('id', id).eq('user_id', userId);
+      return;
+    } catch {
+      // Fallback to localStorage
+    }
+  }
+
+  // Fallback to localStorage
+  const localProjects: LegacyProject[] = JSON.parse(localStorage.getItem('timetracker_projects') || '[]');
+  const numId = parseInt(id, 10);
+  const filteredProjects = localProjects.filter(p => p.id !== numId);
+  localStorage.setItem('timetracker_projects', JSON.stringify(filteredProjects));
+  
+  const localEntries: LegacyTimeEntry[] = JSON.parse(localStorage.getItem('timetracker_entries') || '[]');
+  const filteredEntries = localEntries.filter(e => e.project_id !== numId);
+  localStorage.setItem('timetracker_entries', JSON.stringify(filteredEntries));
 }
 
 // ============ Time Entries ============
@@ -147,105 +329,209 @@ export async function deleteProject(id: number): Promise<void> {
 export async function getEntries(): Promise<TimeEntry[]> {
   if (typeof window === 'undefined') return [];
 
-  if (USE_SUPABASE) {
+  const userId = await getCurrentUserId();
+  if (userId) {
     try {
-      const { data, error } = await getSupabase().from('time_entries').select('*').order('created_at', { ascending: false });
+      const sb = getSupabase();
+      const { data, error } = await sb
+        .from('time_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     } catch {
-      // Fallback
+      // Fallback to localStorage
     }
   }
 
   initStorage();
-  return JSON.parse(localStorage.getItem('timetracker_entries') || '[]');
+  const localEntries: LegacyTimeEntry[] = JSON.parse(localStorage.getItem('timetracker_entries') || '[]');
+  return localEntries.map(e => ({
+    id: String(e.id),
+    user_id: '',
+    project_id: String(e.project_id),
+    date: e.date,
+    hours: e.hours,
+    description: e.description,
+    start_time: e.start_time,
+    end_time: e.end_time,
+    is_timer: e.is_timer,
+    created_at: e.created_at,
+  }));
 }
 
-export async function addEntry(entry: Omit<TimeEntry, 'id' | 'created_at'>): Promise<TimeEntry> {
+export async function addEntry(entry: Omit<TimeEntry, 'id' | 'created_at' | 'user_id'>): Promise<TimeEntry> {
   if (typeof window === 'undefined') throw new Error('Not in browser');
 
-  const newEntry: TimeEntry = {
-    ...entry,
-    id: Date.now(),
-    created_at: new Date().toISOString()
-  };
+  const userId = await getCurrentUserId();
+  const timestamp = new Date().toISOString();
 
-  if (USE_SUPABASE) {
+  if (userId) {
     try {
-      const { data, error } = await getSupabase().from('time_entries').insert([entry] as any).select().single();
+      const sb = getSupabase();
+      const { data, error } = await sb
+        .from('time_entries')
+        .insert({ ...entry, user_id: userId })
+        .select()
+        .single();
       if (error) throw error;
       if (data) return data as TimeEntry;
     } catch {
-      // Fallback
+      // Fallback to localStorage
     }
   }
 
-  const entries = await getEntries();
-  entries.push(newEntry);
-  localStorage.setItem('timetracker_entries', JSON.stringify(entries));
-  return newEntry;
+  // Fallback to localStorage
+  const localEntries: LegacyTimeEntry[] = JSON.parse(localStorage.getItem('timetracker_entries') || '[]');
+  const newEntry: LegacyTimeEntry = {
+    id: Date.now(),
+    project_id: parseInt(entry.project_id, 10) || 0,
+    date: entry.date,
+    hours: entry.hours,
+    description: entry.description,
+    start_time: entry.start_time,
+    end_time: entry.end_time,
+    is_timer: entry.is_timer,
+    created_at: timestamp,
+  };
+  localEntries.push(newEntry);
+  localStorage.setItem('timetracker_entries', JSON.stringify(localEntries));
+  
+  return {
+    id: String(newEntry.id),
+    user_id: userId || '',
+    project_id: String(newEntry.project_id),
+    date: newEntry.date,
+    hours: newEntry.hours,
+    description: newEntry.description,
+    start_time: newEntry.start_time,
+    end_time: newEntry.end_time,
+    is_timer: newEntry.is_timer,
+    created_at: newEntry.created_at,
+  };
 }
 
-export async function updateEntry(id: number, updates: Partial<Omit<TimeEntry, 'id' | 'created_at'>>): Promise<TimeEntry | null> {
+export async function updateEntry(id: string, updates: Partial<Omit<TimeEntry, 'id' | 'created_at' | 'user_id'>>): Promise<TimeEntry | null> {
   if (typeof window === 'undefined') return null;
 
-  const entries = await getEntries();
-  const idx = entries.findIndex(e => e.id === id);
-  if (idx === -1) return null;
+  const userId = await getCurrentUserId();
 
-  entries[idx] = { ...entries[idx], ...updates };
-  localStorage.setItem('timetracker_entries', JSON.stringify(entries));
-  return entries[idx];
-}
-
-export async function deleteEntry(id: number): Promise<void> {
-  if (typeof window === 'undefined') return;
-
-  if (USE_SUPABASE) {
+  if (userId) {
     try {
-      await getSupabase().from('time_entries').delete().eq('id', id);
-      return;
+      const sb = getSupabase();
+      const { data, error } = await sb
+        .from('time_entries')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) return data as TimeEntry;
     } catch {
-      // Fallback
+      // Fallback to localStorage
     }
   }
 
-  const entries = (await getEntries()).filter(e => e.id !== id);
-  localStorage.setItem('timetracker_entries', JSON.stringify(entries));
+  // Fallback to localStorage
+  const localEntries: LegacyTimeEntry[] = JSON.parse(localStorage.getItem('timetracker_entries') || '[]');
+  const numId = parseInt(id, 10);
+  const idx = localEntries.findIndex(e => e.id === numId);
+  if (idx === -1) return null;
+
+  const updatedEntry: any = { ...localEntries[idx], ...updates };
+  if (updates.project_id) {
+    updatedEntry.project_id = parseInt(updates.project_id as string, 10) || localEntries[idx].project_id;
+  }
+  localEntries[idx] = updatedEntry;
+  localStorage.setItem('timetracker_entries', JSON.stringify(localEntries));
+  
+  return {
+    id: String(updatedEntry.id),
+    user_id: userId || '',
+    project_id: String(updatedEntry.project_id),
+    date: updatedEntry.date,
+    hours: updatedEntry.hours,
+    description: updatedEntry.description,
+    start_time: updatedEntry.start_time,
+    end_time: updatedEntry.end_time,
+    is_timer: updatedEntry.is_timer,
+    created_at: updatedEntry.created_at,
+  };
+}
+
+export async function deleteEntry(id: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const userId = await getCurrentUserId();
+
+  if (userId) {
+    try {
+      const sb = getSupabase();
+      await sb.from('time_entries').delete().eq('id', id).eq('user_id', userId);
+      return;
+    } catch {
+      // Fallback to localStorage
+    }
+  }
+
+  // Fallback to localStorage
+  const localEntries: LegacyTimeEntry[] = JSON.parse(localStorage.getItem('timetracker_entries') || '[]');
+  const numId = parseInt(id, 10);
+  const filtered = localEntries.filter(e => e.id !== numId);
+  localStorage.setItem('timetracker_entries', JSON.stringify(filtered));
 }
 
 // ============ Settings ============
 
 export async function getSettings(): Promise<Settings> {
-  if (typeof window === 'undefined') return { hourly_rate: 150 };
+  if (typeof window === 'undefined') return { hourly_rate: 150, user_id: '' };
 
-  if (USE_SUPABASE) {
+  const userId = await getCurrentUserId();
+  if (userId) {
     try {
-      const { data, error } = await getSupabase().from('settings').select('*').eq('id', 1).single();
+      const sb = getSupabase();
+      const { data, error } = await sb
+        .from('settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
       if (error) throw error;
-      if (data) return { hourly_rate: (data as any).hourly_rate };
+      if (data) return { id: data.id, user_id: data.user_id, hourly_rate: data.hourly_rate };
     } catch {
-      // Fallback
+      // Fallback to localStorage
     }
   }
 
   initStorage();
-  return JSON.parse(localStorage.getItem('timetracker_settings') || '{"hourly_rate":150}');
+  const localSettings: LegacySettings = JSON.parse(localStorage.getItem('timetracker_settings') || '{"hourly_rate":150}');
+  return { hourly_rate: localSettings.hourly_rate, user_id: userId || '' };
 }
 
-export async function updateSettings(settings: Settings): Promise<void> {
+export async function updateSettings(settings: Omit<Settings, 'id' | 'user_id'>): Promise<void> {
   if (typeof window === 'undefined') return;
 
-  if (USE_SUPABASE) {
+  const userId = await getCurrentUserId();
+
+  if (userId) {
     try {
-      await getSupabase().from('settings').upsert({ id: 1, hourly_rate: settings.hourly_rate } as any);
+      const sb = getSupabase();
+      const { data: existing } = await sb.from('settings').select('id').eq('user_id', userId).single();
+      
+      if (existing) {
+        await sb.from('settings').update({ hourly_rate: settings.hourly_rate }).eq('id', existing.id);
+      } else {
+        await sb.from('settings').insert({ user_id: userId, hourly_rate: settings.hourly_rate });
+      }
       return;
     } catch {
-      // Fallback
+      // Fallback to localStorage
     }
   }
 
-  localStorage.setItem('timetracker_settings', JSON.stringify(settings));
+  // Fallback to localStorage
+  localStorage.setItem('timetracker_settings', JSON.stringify({ hourly_rate: settings.hourly_rate }));
 }
 
 // ============ Timer State ============

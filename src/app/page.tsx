@@ -417,7 +417,7 @@ export default function Home() {
       const timerState = getTimerState();
       if (timerState?.running) {
         setTimerRunning(true);
-        setTimerProjectId(timerState.project_id);
+        setTimerProjectId(parseInt(timerState.project_id, 10) || 0);
         setTimerStartTimestamp(timerState.start_timestamp);
         setElapsedSeconds(Math.floor((Date.now() - timerState.start_timestamp) / 1000));
       }
@@ -470,7 +470,7 @@ export default function Home() {
     setElapsedSeconds(0);
     setTimerState({
       running: true,
-      project_id: timerProjectId,
+      project_id: String(timerProjectId),
       start_timestamp: now,
     });
   };
@@ -483,7 +483,7 @@ export default function Home() {
     const formatTime = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
     const entry = await addEntry({
-      project_id: timerProjectId,
+      project_id: String(timerProjectId),
       date: new Date().toISOString().split('T')[0],
       hours: durationHours,
       description: '',
@@ -530,7 +530,7 @@ export default function Home() {
     const hours = Math.max(0, diffMinutes / 60);
 
     const entry = await addEntry({
-      project_id: Number(newEntry.project_id),
+      project_id: String(newEntry.project_id),
       date: newEntry.date,
       hours: hours,
       description: ''
@@ -539,7 +539,7 @@ export default function Home() {
     setNewEntry({ ...newEntry, hours: '', start_time: '09:00', end_time: '17:00' });
   };
 
-  const handleDeleteEntry = async (id: number) => {
+  const handleDeleteEntry = async (id: string) => {
     await deleteEntry(id);
     setEntries(await getEntries());
   };
