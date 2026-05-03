@@ -44,6 +44,8 @@ export interface Settings {
   hourly_rate: number;
 }
 
+export type Language = 'de' | 'en' | 'es' | 'fr' | 'ru';
+
 // Initialize default data
 function initStorage() {
   if (typeof window === 'undefined') return;
@@ -56,6 +58,9 @@ function initStorage() {
   }
   if (!localStorage.getItem('timetracker_settings')) {
     localStorage.setItem('timetracker_settings', JSON.stringify({ hourly_rate: 150 }));
+  }
+  if (!localStorage.getItem('timetracker_language')) {
+    localStorage.setItem('timetracker_language', 'de');
   }
 }
 
@@ -239,6 +244,22 @@ export function setTimerState(state: TimerState): void {
 export function clearTimerState(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('timetracker_timer_state');
+}
+
+// ============ Language ============
+
+export function getLanguage(): Language {
+  if (typeof window === 'undefined') return 'de';
+  initStorage();
+  const raw = localStorage.getItem('timetracker_language');
+  if (!raw) return 'de';
+  if (['de','en','es','fr','ru'].includes(raw)) return raw as Language;
+  return 'de';
+}
+
+export function setLanguage(lang: Language): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('timetracker_language', lang);
 }
 
 // ============ Summary Functions ============

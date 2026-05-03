@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTheme } from './lib/theme';
+import { useI18n } from './lib/i18n';
 import {
   getProjects,
   addProject,
@@ -22,7 +23,7 @@ import {
   TimeEntry
 } from './lib/storage';
 
-// Moon icon for dark mode
+// Moon icon
 function MoonIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -31,7 +32,7 @@ function MoonIcon({ className }: { className?: string }) {
   );
 }
 
-// Sun icon for light mode
+// Sun icon
 function SunIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -44,6 +45,16 @@ function SunIcon({ className }: { className?: string }) {
       <line x1="21" y1="12" x2="23" y2="12" />
       <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
       <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+
+// Gear icon
+function GearIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   );
 }
@@ -74,14 +85,14 @@ function Tooltip({ show, x, y, text }: { show: boolean; x: number; y: number; te
   );
 }
 
-// Stacked Bar Chart Component for Weekly View
-function StackedBarChart({ data }: { data: { name: string; projectHours: { project: Project; hours: number; colorIndex: number }[]; totalHours: number }[] }) {
+// Stacked Bar Chart
+function StackedBarChart({ data, t }: { data: { name: string; projectHours: { project: Project; hours: number; colorIndex: number }[]; totalHours: number }[]; t: (key: any, vars?: Record<string, string>) => string }) {
   const [tooltip, setTooltip] = useState<{ show: boolean; x: number; y: number; text: string }>({ show: false, x: 0, y: 0, text: '' });
 
   if (data.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
-        <p>Noch keine Daten vorhanden</p>
+        <p>{t('noWeeklyData')}</p>
       </div>
     );
   }
@@ -111,7 +122,6 @@ function StackedBarChart({ data }: { data: { name: string; projectHours: { proje
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div style={{ display: 'flex', gap: '8px' }}>
-        {/* Y-Axis */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: `${chartHeight}px`, paddingRight: '8px', borderRight: '1px solid var(--border-color)' }}>
           {Array.from({ length: yAxisSteps + 1 }, (_, i) => (
             <span key={i} style={{ fontSize: '0.625rem', color: 'var(--text-muted)', textAlign: 'right', lineHeight: '1' }}>
@@ -119,14 +129,11 @@ function StackedBarChart({ data }: { data: { name: string; projectHours: { proje
             </span>
           ))}
         </div>
-
-        {/* Chart Area */}
         <div style={{ flex: 1, display: 'flex', gap: '8px', height: `${chartHeight}px`, alignItems: 'flex-end', padding: '0 0 8px 0' }}>
           {data.map((day, dayIdx) => {
             const barHeightPercent = day.totalHours > 0 ? (day.totalHours / yAxisMax) * 100 : 0;
             return (
               <div key={dayIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                {/* Bar */}
                 <div
                   style={{
                     width: '100%',
@@ -160,11 +167,9 @@ function StackedBarChart({ data }: { data: { name: string; projectHours: { proje
                     );
                   })}
                 </div>
-                {/* Day Label */}
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                   {day.name}
                 </span>
-                {/* Total Hours */}
                 {day.totalHours > 0 && (
                   <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }}>
                     {day.totalHours.toFixed(1)}h
@@ -175,23 +180,22 @@ function StackedBarChart({ data }: { data: { name: string; projectHours: { proje
           })}
         </div>
       </div>
-      {/* X-Axis Label */}
       <div style={{ textAlign: 'center', fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: '-4px', marginLeft: '32px' }}>
-        Wochentage
+        {t('weekdays')}
       </div>
       <Tooltip {...tooltip} />
     </div>
   );
 }
 
-// Bar Chart Component
+// Bar Chart
 function BarChart({ data }: { data: { label: string; hours: number; colorIndex: number }[] }) {
   const maxHours = Math.max(...data.map(d => d.hours), 1);
 
   if (data.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
-        <p>Noch keine Daten vorhanden</p>
+        <p>No data available</p>
       </div>
     );
   }
@@ -240,8 +244,8 @@ function BarChart({ data }: { data: { label: string; hours: number; colorIndex: 
   );
 }
 
-// Heatmap Component
-function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMonth: number; month: number }[][]; year: number }) {
+// Heatmap
+function Heatmap({ data, year, t }: { data: { date: string; hours: number; dayOfMonth: number; month: number }[][]; year: number; t: (key: any, vars?: Record<string, string>) => string }) {
   const [tooltip, setTooltip] = useState<{ show: boolean; x: number; y: number; text: string }>({ show: false, x: 0, y: 0, text: '' });
 
   const getIntensity = (hours: number) => {
@@ -252,11 +256,11 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
     return 4;
   };
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  const months = [t('jan'), t('feb'), t('mar'), t('apr'), t('may'), t('jun'), t('jul'), t('aug'), t('sep'), t('oct'), t('nov'), t('dec')];
 
   const handleMouseEnter = (e: React.MouseEvent, cell: { date: string; hours: number; dayOfMonth: number; month: number }) => {
     const date = new Date(cell.date);
-    const dateStr = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+    const dateStr = date.toLocaleDateString(langLocale(t), { day: 'numeric', month: 'long', year: 'numeric' });
     setTooltip({
       show: true,
       x: e.clientX + 10,
@@ -275,7 +279,6 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {/* Month Labels */}
       <div style={{ display: 'flex', marginLeft: '20px', gap: '2px' }}>
         {months.map((m, i) => (
           <div key={i} style={{ width: '14px', fontSize: '0.625rem', color: 'var(--text-muted)', textAlign: 'left' }}>
@@ -283,19 +286,14 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
           </div>
         ))}
       </div>
-
-      {/* Heatmap Grid */}
       <div style={{ display: 'flex', gap: '4px' }}>
-        {/* Day labels */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px' }}>
-          {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d, i) => (
+          {[t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat'), t('sun')].map((d, i) => (
             <div key={i} style={{ height: '10px', fontSize: '0.625rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
               {d}
             </div>
           ))}
         </div>
-
-        {/* Weeks */}
         <div style={{ display: 'flex', gap: '2px' }}>
           {data.map((week, weekIdx) => (
             <div key={weekIdx} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -322,10 +320,8 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
           ))}
         </div>
       </div>
-
-      {/* Legend */}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px', fontSize: '0.625rem', color: 'var(--text-muted)' }}>
-        <span>Weniger</span>
+        <span>{t('less')}</span>
         {[0, 1, 2, 3, 4].map(i => (
           <div
             key={i}
@@ -338,17 +334,24 @@ function Heatmap({ data, year }: { data: { date: string; hours: number; dayOfMon
             }}
           />
         ))}
-        <span>Mehr</span>
+        <span>{t('more')}</span>
       </div>
-
       <Tooltip {...tooltip} />
     </div>
   );
 }
 
+function langLocale(t: (key: any) => string): string {
+  // map internal lang to browser locale for date formatting
+  const map: Record<string, string> = { de: 'de-DE', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU' };
+  return map[t('timer') === 'Timer' ? 'de' : 'en'] || 'de-DE';
+}
+
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'timer' | 'projects' | 'reports' | 'settings'>('timer');
+  const { lang, setLang, t } = useI18n();
+
+  const [activeTab, setActiveTab] = useState<'timer' | 'projects' | 'reports'>('timer');
   const [reportView, setReportView] = useState<'week' | 'month' | 'all'>('week');
   const [projects, setProjects] = useState<Project[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
@@ -369,7 +372,7 @@ export default function Home() {
   const [timerStartTimestamp, setTimerStartTimestamp] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // Pagination State
+  // Pagination
   const [entriesPage, setEntriesPage] = useState(1);
   const ENTRIES_PER_PAGE = 10;
   const [reportMonth, setReportMonth] = useState(() => {
@@ -377,14 +380,25 @@ export default function Home() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  // Delete Modal State
+  // Delete Modal
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; project: Project | null }>({ show: false, project: null });
 
   // Settings save feedback
   const [settingsSaved, setSettingsSaved] = useState(false);
 
+  // Settings popover
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
   // Year for heatmap
   const [heatmapYear] = useState(new Date().getFullYear());
+
+  // Update html lang attribute
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lang === 'en' ? 'en' : lang === 'es' ? 'es' : lang === 'fr' ? 'fr' : lang === 'ru' ? 'ru' : 'de';
+    }
+  }, [lang]);
 
   useEffect(() => {
     async function load() {
@@ -392,7 +406,6 @@ export default function Home() {
       setEntries(await getEntries());
       setSettings(await getSettings());
 
-      // Restore timer state
       const timerState = getTimerState();
       if (timerState?.running) {
         setTimerRunning(true);
@@ -413,7 +426,6 @@ export default function Home() {
       const elapsed = Math.floor((now - timerStartTimestamp) / 1000);
       setElapsedSeconds(elapsed);
 
-      // Auto-stop after 6 hours (21600 seconds)
       if (elapsed >= 21600) {
         handleStopTimer();
       }
@@ -421,6 +433,19 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, [timerRunning, timerStartTimestamp]);
+
+  // Close settings popover on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    }
+    if (settingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [settingsOpen]);
 
   const formatDuration = (totalSeconds: number): string => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -491,7 +516,6 @@ export default function Home() {
 
   const handleAddEntry = async () => {
     if (!newEntry.project_id || !newEntry.start_time || !newEntry.end_time) return;
-    // Berechne Stunden aus Von/Bis
     const [sh, sm] = newEntry.start_time.split(':').map(Number);
     const [eh, em] = newEntry.end_time.split(':').map(Number);
     const diffMinutes = (eh * 60 + em) - (sh * 60 + sm);
@@ -518,7 +542,6 @@ export default function Home() {
     setTimeout(() => setSettingsSaved(false), 2000);
   };
 
-  // Load summaries via effect
   interface ProjectStat { project: Project; totalHours: number; revenue: number; entries: TimeEntry[]; }
   const [monthlySummary, setMonthlySummary] = useState({ projectStats: [] as ProjectStat[], totalHours: 0, totalRevenue: 0, entryCount: 0 });
   const [allTimeSummary, setAllTimeSummary] = useState({ projectStats: [] as ProjectStat[], totalHours: 0, totalRevenue: 0, projectCount: 0, entryCount: 0 });
@@ -538,21 +561,18 @@ export default function Home() {
     loadSummaries();
   }, [entries, projects, settings, reportMonth, heatmapYear]);
 
-  // Pagination
   const paginatedEntries = [...entries]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice((entriesPage - 1) * ENTRIES_PER_PAGE, entriesPage * ENTRIES_PER_PAGE);
 
   const totalPages = Math.ceil(entries.length / ENTRIES_PER_PAGE) || 1;
 
-  // Chart data for monthly view
   const monthlyChartData = monthlySummary.projectStats.map((stat, idx) => ({
     label: stat.project.name,
     hours: stat.totalHours,
     colorIndex: idx
   }));
 
-  // Chart data for all-time view
   const allTimeChartData = allTimeSummary.projectStats.map((stat, idx) => ({
     label: stat.project.name,
     hours: stat.totalHours,
@@ -560,16 +580,15 @@ export default function Home() {
   }));
 
   const tabButtons = [
-    { key: 'timer' as const, label: 'Timer' },
-    { key: 'projects' as const, label: 'Aufgaben' },
-    { key: 'reports' as const, label: 'Auswertung' },
-    { key: 'settings' as const, label: 'Einstellungen' }
+    { key: 'timer' as const, label: t('timer') },
+    { key: 'projects' as const, label: t('projects') },
+    { key: 'reports' as const, label: t('reports') }
   ];
 
   const reportViewButtons = [
-    { key: 'week' as const, label: 'Woche' },
-    { key: 'month' as const, label: 'Monat' },
-    { key: 'all' as const, label: 'Gesamt' }
+    { key: 'week' as const, label: t('week') },
+    { key: 'month' as const, label: t('month') },
+    { key: 'all' as const, label: t('all') }
   ];
 
   return (
@@ -603,10 +622,10 @@ export default function Home() {
             onClick={e => e.stopPropagation()}
           >
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '12px', color: 'var(--text-primary)' }}>
-              Aufgabe löschen
+              {t('confirmDelete')}
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '20px', lineHeight: 1.5 }}>
-              WARNUNG: Die Aufgabe &quot;{deleteModal.project?.name}&quot; und alle zugehörigen Zeiteinträge werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('deleteWarning', { name: deleteModal.project?.name || '' })}
             </p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
@@ -623,7 +642,7 @@ export default function Home() {
                   cursor: 'pointer'
                 }}
               >
-                Abbrechen
+                {t('cancel')}
               </button>
               <button
                 onClick={confirmDeleteProject}
@@ -639,7 +658,7 @@ export default function Home() {
                   cursor: 'pointer'
                 }}
               >
-                Aufgabe + Einträge löschen
+                {t('deleteProjectAndEntries')}
               </button>
             </div>
           </div>
@@ -647,23 +666,148 @@ export default function Home() {
       )}
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 20px' }}>
-        {/* Header with Theme Toggle */}
+        {/* Header with Theme Toggle + Gear */}
         <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
-              Time Tracker
+              {t('appTitle')}
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-              Erfasse deine Arbeitszeit
+              {t('appSubtitle')}
             </p>
           </div>
-          <button onClick={toggleTheme} className="theme-toggle">
-            {theme === 'dark' ? (
-              <><SunIcon className="w-5 h-5" /><span>Light</span></>
-            ) : (
-              <><MoonIcon className="w-5 h-5" /><span>Dark</span></>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+            <button
+              onClick={() => setSettingsOpen(o => !o)}
+              className="icon-button"
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '10px',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+              aria-label={t('settings')}
+              title={t('settings')}
+            >
+              <GearIcon className="w-5 h-5" />
+            </button>
+            <button onClick={toggleTheme} className="icon-button" style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              padding: '10px',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }} aria-label={theme === 'dark' ? t('lightMode') : t('darkMode')} title={theme === 'dark' ? t('lightMode') : t('darkMode')}>
+              {theme === 'dark' ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+            </button>
+
+            {/* Settings Popover */}
+            {settingsOpen && (
+              <div
+                ref={popoverRef}
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  width: '280px',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  zIndex: 100,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px'
+                }}
+              >
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                  {t('settings')}
+                </h3>
+
+                {/* Theme toggle inside popover */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t('theme')}</span>
+                  <button
+                    onClick={toggleTheme}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.8125rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {theme === 'dark' ? <MoonIcon className="w-4 h-4" /> : <SunIcon className="w-4 h-4" />}
+                    {theme === 'dark' ? t('darkMode') : t('lightMode')}
+                  </button>
+                </div>
+
+                {/* Language selector */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    {t('language')}
+                  </label>
+                  <select
+                    value={lang}
+                    onChange={e => setLang(e.target.value as any)}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="de">DE — Deutsch</option>
+                    <option value="en">EN — English</option>
+                    <option value="es">ES — Español</option>
+                    <option value="fr">FR — Français</option>
+                    <option value="ru">RU — Русский</option>
+                  </select>
+                </div>
+
+                {/* Hourly rate */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    {t('hourlyRate')}
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.hourly_rate}
+                    onChange={e => setSettings({ ...settings, hourly_rate: Number(e.target.value) })}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <button
+                  onClick={handleUpdateSettings}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: settingsSaved ? 'var(--success)' : 'var(--accent)',
+                    color: '#ffffff',
+                    fontSize: '0.9375rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {settingsSaved ? t('saved') : t('save')}
+                </button>
+              </div>
             )}
-          </button>
+          </div>
         </header>
 
         {/* Navigation */}
@@ -704,26 +848,25 @@ export default function Home() {
         {/* Timer Tab */}
         {activeTab === 'timer' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Split Layout: Timer + Manual */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-              {/* Left: Live Timer */}
+              {/* Live Timer */}
               <div className="card" style={{ padding: '24px' }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-                  Live Timer
+                  {t('liveTimer')}
                 </h2>
 
                 {!timerRunning ? (
                   <div>
                     <div style={{ marginBottom: '16px' }}>
                       <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Aufgabe
+                        {t('project')}
                       </label>
                       <select
                         value={timerProjectId}
                         onChange={e => setTimerProjectId(Number(e.target.value))}
                         style={{ width: '100%' }}
                       >
-                        <option value={0}>Aufgabe wählen...</option>
+                        <option value={0}>{t('selectProject')}</option>
                         {projects.map(p => (
                           <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
@@ -744,7 +887,7 @@ export default function Home() {
                         cursor: timerProjectId ? 'pointer' : 'not-allowed'
                       }}
                     >
-                      Timer starten
+                      {t('startTimer')}
                     </button>
                   </div>
                 ) : (
@@ -753,7 +896,7 @@ export default function Home() {
                       {formatDuration(elapsedSeconds)}
                     </div>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '0.875rem' }}>
-                      Timer läuft...
+                      {t('timerRunning')}
                     </p>
                     <button
                       onClick={handleStopTimer}
@@ -765,31 +908,32 @@ export default function Home() {
                         background: 'var(--danger)',
                         color: '#ffffff',
                         fontSize: '1rem',
-                        fontWeight: 600
+                        fontWeight: 600,
+                        cursor: 'pointer'
                       }}
                     >
-                      Timer stoppen & speichern
+                      {t('stopTimer')}
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Right: Manual Entry */}
+              {/* Manual Entry */}
               <div className="card" style={{ padding: '24px' }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-                  Manuelle Eingabe
+                  {t('manualEntry')}
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      Aufgabe
+                      {t('project')}
                     </label>
                     <select
                       value={newEntry.project_id}
                       onChange={e => setNewEntry({ ...newEntry, project_id: Number(e.target.value) })}
                       style={{ width: '100%' }}
                     >
-                      <option value={0}>Aufgabe wählen...</option>
+                      <option value={0}>{t('selectProject')}</option>
                       {projects.map(p => (
                         <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
@@ -798,7 +942,7 @@ export default function Home() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Datum
+                        {t('date')}
                       </label>
                       <input
                         type="date"
@@ -810,7 +954,7 @@ export default function Home() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Von
+                        {t('from')}
                       </label>
                       <input
                         type="time"
@@ -820,7 +964,7 @@ export default function Home() {
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Bis
+                        {t('to')}
                       </label>
                       <input
                         type="time"
@@ -830,7 +974,7 @@ export default function Home() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg-inner)', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Berechnete Stunden:</span>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t('calculatedHours')}</span>
                     <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--accent)' }}>
                       {(() => {
                         if (!newEntry.start_time || !newEntry.end_time) return '0.00h';
@@ -856,7 +1000,7 @@ export default function Home() {
                       cursor: (newEntry.project_id && newEntry.start_time && newEntry.end_time) ? 'pointer' : 'not-allowed'
                     }}
                   >
-                    Eintrag speichern
+                    {t('saveEntry')}
                   </button>
                 </div>
               </div>
@@ -866,17 +1010,17 @@ export default function Home() {
             <div className="card" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Letzte Einträge
+                  {t('recentEntries')}
                 </h2>
                 <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                  Seite {entriesPage} / {totalPages}
+                  {t('page')} {entriesPage} {t('of')} {totalPages}
                 </span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {paginatedEntries.length === 0 ? (
                   <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                    Noch keine Einträge vorhanden.
+                    {t('noEntries')}
                   </p>
                 ) : (
                   paginatedEntries.map(entry => {
@@ -897,7 +1041,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                              {project?.name || 'Unbekannte Aufgabe'}
+                              {project?.name || t('unknownProject')}
                             </span>
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                               {entry.date}
@@ -925,7 +1069,7 @@ export default function Home() {
                               cursor: 'pointer'
                             }}
                           >
-                            Löschen
+                            {t('delete')}
                           </button>
                         </div>
                       </div>
@@ -934,7 +1078,6 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
                   <button
@@ -949,7 +1092,7 @@ export default function Home() {
                       cursor: entriesPage === 1 ? 'not-allowed' : 'pointer'
                     }}
                   >
-                    Vorherige
+                    {t('previous')}
                   </button>
                   <button
                     onClick={() => setEntriesPage(p => Math.min(totalPages, p + 1))}
@@ -963,7 +1106,7 @@ export default function Home() {
                       cursor: entriesPage === totalPages ? 'not-allowed' : 'pointer'
                     }}
                   >
-                    Nächste
+                    {t('next')}
                   </button>
                 </div>
               )}
@@ -975,13 +1118,13 @@ export default function Home() {
         {activeTab === 'projects' && (
           <div className="card" style={{ padding: '24px' }}>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-              Aufgaben verwalten
+              {t('manageProjects')}
             </h2>
 
             <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
               <input
                 type="text"
-                placeholder="Neue Aufgabe..."
+                placeholder={t('newProjectPlaceholder')}
                 value={newProject}
                 onChange={e => setNewProject(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddProject()}
@@ -1000,14 +1143,14 @@ export default function Home() {
                   cursor: newProject.trim() ? 'pointer' : 'not-allowed'
                 }}
               >
-                Hinzufügen
+                {t('add')}
               </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {projects.length === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                  Noch keine Aufgaben vorhanden. Erstelle deine erste Aufgabe!
+                  {t('noProjects')}
                 </p>
               ) : (
                 projects.map(project => (
@@ -1038,7 +1181,7 @@ export default function Home() {
                         cursor: 'pointer'
                       }}
                     >
-                      Löschen
+                      {t('delete')}
                     </button>
                   </div>
                 ))
@@ -1089,12 +1232,11 @@ export default function Home() {
             {reportView === 'week' && (
               <div className="card" style={{ padding: '24px' }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-                  Wochenübersicht
+                  {t('weeklyOverview')}
                 </h2>
                 {weeklySummary.days.some(d => d.totalHours > 0) ? (
                   <>
-                    <StackedBarChart data={weeklySummary.days} />
-                    {/* Legend */}
+                    <StackedBarChart data={weeklySummary.days} t={t} />
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
                       {projects.map((p, idx) => {
                         const colorClass = `bar-color-${idx % 8}`;
@@ -1109,7 +1251,7 @@ export default function Home() {
                   </>
                 ) : (
                   <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                    Noch keine Einträge in dieser Woche.
+                    {t('noWeeklyData')}
                   </p>
                 )}
               </div>
@@ -1120,7 +1262,7 @@ export default function Home() {
               <div className="card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    Monatsauswertung
+                    {t('monthlyReport')}
                   </h2>
                   <input
                     type="month"
@@ -1138,7 +1280,7 @@ export default function Home() {
                 }}>
                   <div className="stat-card">
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Gesamtstunden
+                      {t('totalHours')}
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>
                       {monthlySummary.totalHours.toFixed(1)}h
@@ -1146,7 +1288,7 @@ export default function Home() {
                   </div>
                   <div className="stat-card">
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Kalkulierte Kosten
+                      {t('calculatedCosts')}
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>
                       {monthlySummary.totalRevenue.toFixed(0)} EUR
@@ -1154,7 +1296,7 @@ export default function Home() {
                   </div>
                   <div className="stat-card">
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Einträge
+                      {t('entries')}
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                       {monthlySummary.entryCount}
@@ -1162,11 +1304,10 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Monthly Bar Chart */}
                 {monthlyChartData.length > 0 && (
                   <div style={{ marginTop: '8px' }}>
                     <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                      Stunden nach Aufgabe
+                      {t('hoursByProject')}
                     </h3>
                     <BarChart data={monthlyChartData} />
                   </div>
@@ -1177,17 +1318,16 @@ export default function Home() {
             {/* All Time Report */}
             {reportView === 'all' && (
               <>
-                {/* Yearly Heatmap */}
                 <div className="card" style={{ padding: '24px' }}>
                   <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-                    Jahresübersicht {heatmapYear}
+                    {t('yearlyOverview')} {heatmapYear}
                   </h2>
-                  <Heatmap data={yearlyHeatmap} year={heatmapYear} />
+                  <Heatmap data={yearlyHeatmap} year={heatmapYear} t={t} />
                 </div>
 
                 <div className="card" style={{ padding: '24px' }}>
                   <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-                    Gesamtauswertung
+                    {t('allTimeReport')}
                   </h2>
 
                   <div style={{
@@ -1198,7 +1338,7 @@ export default function Home() {
                   }}>
                     <div className="stat-card">
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Gesamtstunden
+                        {t('totalHours')}
                       </div>
                       <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>
                         {allTimeSummary.totalHours.toFixed(1)}h
@@ -1206,7 +1346,7 @@ export default function Home() {
                     </div>
                     <div className="stat-card">
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Kalkulierte Kosten
+                        {t('calculatedCosts')}
                       </div>
                       <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>
                         {allTimeSummary.totalRevenue.toFixed(0)} EUR
@@ -1214,7 +1354,7 @@ export default function Home() {
                     </div>
                     <div className="stat-card">
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Aufgaben
+                        {t('projects')}
                       </div>
                       <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                         {allTimeSummary.projectCount}
@@ -1222,11 +1362,10 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* All-Time Bar Chart */}
                   {allTimeChartData.length > 0 && (
                     <div style={{ marginTop: '8px' }}>
                       <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                        Alle Stunden nach Aufgabe
+                        {t('allHoursByProject')}
                       </h3>
                       <BarChart data={allTimeChartData} />
                     </div>
@@ -1234,44 +1373,6 @@ export default function Home() {
                 </div>
               </>
             )}
-          </div>
-        )}
-
-        {/* Settings Tab */}
-        {activeTab === 'settings' && (
-          <div className="card" style={{ padding: '24px', maxWidth: '480px' }}>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>
-              Einstellungen
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Stundensatz (EUR)
-                </label>
-                <input
-                  type="number"
-                  value={settings.hourly_rate}
-                  onChange={e => setSettings({ ...settings, hourly_rate: Number(e.target.value) })}
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <button
-                onClick={handleUpdateSettings}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: settingsSaved ? 'var(--success)' : 'var(--accent)',
-                  color: '#ffffff',
-                  fontSize: '0.9375rem',
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {settingsSaved ? 'Gespeichert' : 'Speichern'}
-              </button>
-            </div>
           </div>
         )}
       </div>
