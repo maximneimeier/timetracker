@@ -2,14 +2,69 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Press_Start_2P } from 'next/font/google';
 import { useTheme } from '../lib/theme';
-import { useI18n } from '../lib/i18n';
+import { useI18n, type Language } from '../lib/i18n';
 import {
   listWorkspaces,
   createWorkspace,
   type Workspace,
   type WorkspaceKind,
 } from '../lib/storage';
+
+const pixelClockFont = Press_Start_2P({
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+});
+
+function localeForLang(lang: Language): string {
+  if (lang === 'de') return 'de-DE';
+  if (lang === 'en') return 'en-US';
+  if (lang === 'es') return 'es-ES';
+  if (lang === 'fr') return 'fr-FR';
+  return 'ru-RU';
+}
+
+function PixelDigitalClock() {
+  const { t, lang } = useI18n();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const blink = now.getSeconds() % 2 === 0;
+  const sep = blink ? ':' : ' ';
+
+  const dateLine = now.toLocaleDateString(localeForLang(lang), {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return (
+    <div className="workspace-picker-pixel-clock">
+      <time
+        dateTime={now.toISOString()}
+        aria-label={t('workspacePickerClockAria')}
+        className={`workspace-picker-pixel-clock__time ${pixelClockFont.className}`}
+      >
+        {h}
+        {sep}
+        {m}
+        {sep}
+        {s}
+      </time>
+      <p className="workspace-picker-pixel-clock__date">{dateLine}</p>
+    </div>
+  );
+}
 
 function PlusIcon({ className }: { className?: string }) {
   return (
@@ -121,6 +176,7 @@ export default function DashboardWorkspacePickerPage() {
       </header>
 
       <main style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 20px 40px' }}>
+        <PixelDigitalClock />
         <div
           style={{
             display: 'grid',

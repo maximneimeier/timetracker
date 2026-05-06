@@ -763,3 +763,63 @@ html[data-theme='light'] .timer-shell--mono .timer-shell-display {
   font-size: 1.2rem !important;
   margin-bottom: 4px !important;
 }
+
+/* Dashboard workspace picker — retro pixel LCD clock */
+.workspace-picker-pixel-clock {
+  text-align: center;
+  margin: 0 0 28px;
+  padding: 22px 20px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: linear-gradient(165deg, var(--bg-inner) 0%, var(--bg-card) 45%, #0a0b0d 100%);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.workspace-picker-pixel-clock::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 3px
+  );
+  opacity: 0.35;
+}
+
+.workspace-picker-pixel-clock__time {
+  position: relative;
+  z-index: 1;
+  display: block;
+  font-size: clamp(1.35rem, 5vw, 2.35rem);
+  line-height: 1.15;
+  letter-spacing: 0.12em;
+  color: #7dd3fc;
+  text-shadow:
+    0 0 12px rgba(56, 189, 248, 0.55),
+    0 0 28px rgba(59, 130, 246, 0.35),
+    2px 2px 0 rgba(0, 0, 0, 0.45);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="light"] .workspace-picker-pixel-clock__time {
+  color: #0369a1;
+  text-shadow:
+    0 0 10px rgba(14, 165, 233, 0.25),
+    1px 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.workspace-picker-pixel-clock__date {
+  position: relative;
+  z-index: 1;
+  margin: 12px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
