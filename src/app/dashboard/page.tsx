@@ -663,7 +663,7 @@ export default function Home() {
           <div
             style={{
               background: 'var(--bg-card)',
-              borderRadius: '16px',
+              borderRadius: '10px',
               padding: '24px',
               maxWidth: '400px',
               width: '90%',
@@ -744,7 +744,7 @@ export default function Home() {
               style={{
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border-color)',
-                borderRadius: '12px',
+                borderRadius: '8px',
                 padding: '10px',
                 color: 'var(--text-secondary)',
                 display: 'flex',
@@ -760,7 +760,7 @@ export default function Home() {
             <button onClick={toggleTheme} className="icon-button" style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border-color)',
-              borderRadius: '12px',
+              borderRadius: '8px',
               padding: '10px',
               color: 'var(--text-secondary)',
               display: 'flex',
@@ -782,7 +782,7 @@ export default function Home() {
                   width: '280px',
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
+                  borderRadius: '10px',
                   padding: '20px',
                   zIndex: 100,
                   boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
@@ -854,7 +854,7 @@ export default function Home() {
                   style={{
                     width: '100%',
                     padding: '12px',
-                    borderRadius: '12px',
+                    borderRadius: '8px',
                     border: 'none',
                     background: settingsSaved ? 'var(--success)' : 'var(--accent)',
                     color: '#ffffff',
@@ -875,7 +875,7 @@ export default function Home() {
                     display: 'block',
                     width: '100%',
                     padding: '12px',
-                    borderRadius: '12px',
+                    borderRadius: '8px',
                     border: '1px solid var(--border-color)',
                     background: 'var(--bg-inner)',
                     color: 'var(--text-primary)',
@@ -902,14 +902,18 @@ export default function Home() {
               onClick={() => setActiveTab(tab.key)}
               style={{
                 flex: 1,
-                padding: '10px 16px',
-                borderRadius: '10px',
-                fontSize: '0.875rem',
+                padding: '8px 14px',
+                borderRadius: '6px',
+                fontSize: '0.8125rem',
                 fontWeight: 500,
                 border: 'none',
                 background: activeTab === tab.key ? 'var(--accent)' : 'transparent',
                 color: activeTab === tab.key ? '#ffffff' : 'var(--text-secondary)',
-                transition: 'all 0.2s ease'
+                boxShadow:
+                  activeTab === tab.key
+                    ? 'inset 0 1px 0 rgba(255,255,255,0.14)'
+                    : 'none',
+                transition: 'all 0.15s ease'
               }}
               onMouseEnter={e => {
                 if (activeTab !== tab.key) {
@@ -962,7 +966,7 @@ export default function Home() {
                       style={{
                         width: '100%',
                         padding: '14px',
-                        borderRadius: '12px',
+                        borderRadius: '8px',
                         border: 'none',
                         background: timerProjectId ? 'var(--success)' : 'var(--text-disabled)',
                         color: '#ffffff',
@@ -987,7 +991,7 @@ export default function Home() {
                       style={{
                         width: '100%',
                         padding: '14px',
-                        borderRadius: '12px',
+                        borderRadius: '8px',
                         border: 'none',
                         background: 'var(--danger)',
                         color: '#ffffff',
@@ -1075,7 +1079,7 @@ export default function Home() {
                     style={{
                       width: '100%',
                       padding: '14px',
-                      borderRadius: '12px',
+                      borderRadius: '8px',
                       border: 'none',
                       background: (newEntry.project_id && newEntry.start_time && newEntry.end_time) ? 'var(--accent)' : 'var(--text-disabled)',
                       color: '#ffffff',
@@ -1118,7 +1122,7 @@ export default function Home() {
                           alignItems: 'center',
                           padding: '16px',
                           background: 'var(--bg-inner)',
-                          borderRadius: '12px',
+                          borderRadius: '8px',
                           border: '1px solid var(--border-color)'
                         }}
                       >
@@ -1260,7 +1264,7 @@ export default function Home() {
                       alignItems: 'center',
                       padding: '16px',
                       background: 'var(--bg-inner)',
-                      borderRadius: '12px',
+                      borderRadius: '8px',
                       border: '1px solid var(--border-color)'
                     }}
                   >

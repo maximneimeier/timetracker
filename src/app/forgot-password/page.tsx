@@ -133,17 +133,14 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
+            className="linear-btn-primary"
             style={{
               width: '100%',
-              padding: '12px',
-              background: 'var(--accent)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '0.9375rem',
+              padding: '10px',
+              marginTop: '10px',
+              fontSize: '0.8125rem',
               fontWeight: 500,
-              marginTop: '8px',
-              opacity: loading ? 0.7 : 1,
+              opacity: loading ? 0.65 : 1,
               cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
