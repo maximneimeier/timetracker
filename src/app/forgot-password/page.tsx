@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [user, authLoading, router]);
 
@@ -163,6 +163,11 @@ export default function ForgotPasswordPage() {
           >
             {t('backToLogin')}
           </Link>
+          <div style={{ marginTop: 12 }}>
+            <Link href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.8125rem' }}>
+              ← {t('appTitle')}
+            </Link>
+          </div>
         </div>
       </div>
     </div>

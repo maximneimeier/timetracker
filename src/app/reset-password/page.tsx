@@ -46,7 +46,7 @@ export default function ResetPasswordPage() {
       setLoading(false);
     } else {
       setSuccess(t('passwordUpdated'));
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => router.push('/login?next=%2Fdashboard'), 2000);
     }
   };
 

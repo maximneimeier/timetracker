@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Time Tracker",
-  description: "Minimalist time tracking app",
+  description:
+    "Zeiterfassung mit Supabase-Login: Projekte, Timer und Auswertungen – jede Person eigene Daten.",
 };
 
 export default function RootLayout({
