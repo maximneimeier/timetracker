@@ -353,6 +353,157 @@ button {
   color: var(--text-primary);
 }
 
+/* —— Landing Page: Pixel-/Motion-Deko —— */
+.landing-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+.landing-shell-fallback {
+  /* Falls CSS-Variablen noch nicht greifen (FOUC) */
+  background-color: #08090a;
+  color: #f7f8f8;
+}
+
+html[data-theme="light"] .landing-shell-fallback {
+  background-color: #f7f8f9;
+  color: #08090a;
+}
+
+.landing-content {
+  position: relative;
+  z-index: 2;
+}
+
+.landing-vignette {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse 75% 65% at 50% 0%, transparent 30%, var(--bg-page) 88%);
+  opacity: 0.85;
+}
+
+.landing-showcase-wrap {
+  animation: landing-float 7.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-showcase-wrap {
+    animation: none;
+  }
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.landing-pixel-bar {
+  display: block;
+  height: 6px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), #38bdf8);
+  image-rendering: pixelated;
+  transform-origin: left center;
+}
+
+.landing-pixel-bar-a {
+  animation: landing-bar-pulse 3.8s ease-in-out infinite;
+}
+
+.landing-pixel-bar-b {
+  animation: landing-bar-pulse 4.6s ease-in-out -0.6s infinite;
+  opacity: 0.75;
+}
+
+.landing-pixel-bar-c {
+  animation: landing-bar-pulse 3.2s ease-in-out -1.1s infinite;
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-pixel-bar-a,
+  .landing-pixel-bar-b,
+  .landing-pixel-bar-c {
+    animation: none;
+    width: 85% !important;
+  }
+}
+
+@keyframes landing-bar-pulse {
+  0%,
+  100% {
+    width: 42%;
+    opacity: 0.45;
+  }
+  50% {
+    width: 96%;
+    opacity: 0.85;
+  }
+}
+
+.landing-digit-row {
+  font-variant-numeric: tabular-nums;
+  animation: landing-digit-glow 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-digit-row {
+    animation: none;
+  }
+}
+
+@keyframes landing-digit-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+    opacity: 1;
+  }
+  50% {
+    filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 35%, transparent));
+    opacity: 0.96;
+  }
+}
+
+.landing-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.landing-cta-band {
+  margin-top: 48px;
+  padding: 28px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 12%, var(--bg-card)) 0%,
+    var(--bg-card) 55%
+  );
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
 /* Projekt-/Balkenfarben */
 .project-color-0 { color: var(--chart-1); }
 .project-color-1 { color: var(--chart-2); }
