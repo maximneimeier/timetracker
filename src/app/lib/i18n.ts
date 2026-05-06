@@ -75,7 +75,6 @@ const baseTranslations = {
   landingFooter: 'Time Tracker · Entwickelt für produktives Arbeiten im Team.',
   landingNoSupabase:
     'Hinweis: Für Mehrbenutzerbetrieb NEXT_PUBLIC_SUPABASE_URL und Schlüssel in .env.local setzen.',
-  dashboardBackHome: 'Zur Übersicht',
   // Auth translations end
   timer: 'Timer',
   aufgaben: 'Aufgaben',
@@ -278,7 +277,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     landingFooter: 'Time Tracker · Built for productive teamwork.',
     landingNoSupabase:
       'Note: For multi-user mode set NEXT_PUBLIC_SUPABASE_URL and key in .env.local.',
-    dashboardBackHome: 'Back to overview',
     // Existing translations
     aufgaben: 'Tasks',
     auswertung: 'Reports',
@@ -409,7 +407,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     landingFooter: 'Time Tracker · Hecho para equipos productivos.',
     landingNoSupabase:
       'Aviso: para varios usuarios configura NEXT_PUBLIC_SUPABASE_URL y la clave en .env.local.',
-    dashboardBackHome: 'Ir a la portada',
     // Existing translations
     aufgaben: 'Tareas',
     auswertung: 'Informes',
@@ -547,7 +544,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     landingFooter: 'Time Tracker · Pour travailler efficacement en équipe.',
     landingNoSupabase:
       'Remarque : pour le mode multi-utilisateur, définissez NEXT_PUBLIC_SUPABASE_URL et la clé dans .env.local.',
-    dashboardBackHome: "Voir la page d'accueil",
     // Existing translations
     aufgaben: 'Tâches',
     auswertung: 'Rapports',
@@ -689,7 +685,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     landingFooter: 'Time Tracker · Для командной работы.',
     landingNoSupabase:
       'Для режима нескольких пользователей задайте NEXT_PUBLIC_SUPABASE_URL и ключ в .env.local.',
-    dashboardBackHome: 'На главную',
     // Existing translations
     aufgaben: 'Задачи',
     auswertung: 'Отчеты',

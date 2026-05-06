@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
 import { useTheme } from '../lib/theme';
 import { useI18n } from '../lib/i18n';
 import {
@@ -722,20 +721,9 @@ export default function Home() {
             <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
               {t('appTitle')}
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', marginBottom: '6px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
               {t('appSubtitle')}
             </p>
-            <Link
-              href="/"
-              style={{
-                fontSize: '0.8125rem',
-                color: 'var(--accent)',
-                textDecoration: 'none',
-                fontWeight: 500,
-              }}
-            >
-              ← {t('dashboardBackHome')}
-            </Link>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
             <button
