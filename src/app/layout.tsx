@@ -1,10 +1,10 @@
 import { Inter, JetBrains_Mono } from "next/font/google";
-import Script from "next/script";
 import { ThemeProvider } from "./lib/theme";
 import { AuthProvider } from "./lib/AuthContext";
 import { I18nProvider } from "./components/I18nProvider";
 import "./globals.css";
 
+/** Synchron im HTML, kein next/script im Client-Baum (vermeidet Hydration-Hinweise). */
 const themeInitScript = `(function(){try{var t=localStorage.getItem("timetracker_theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
 
 const inter = Inter({
@@ -33,9 +33,10 @@ export default function RootLayout({
   return (
     <html lang="de" data-theme="dark" suppressHydrationWarning>
       <body className={`${inter.variable} ${mono.variable} antialiased`}>
-        <Script id="timetracker-theme-init" strategy="beforeInteractive">
-          {themeInitScript}
-        </Script>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
         <ThemeProvider>
           <AuthProvider>
             <I18nProvider>
