@@ -42,11 +42,13 @@ export async function resetPassword(email: string) {
 
 export async function updateProfile(updates: { name?: string; email?: string }) {
   if (!supabase) return { data: null, error: notConfigured() };
-  const { data, error } = await supabase.auth.updateUser({
-    data: updates.name ? { name: updates.name } : undefined,
-    email: updates.email,
-  });
-  return { data, error };
+  const payload: Parameters<typeof supabase.auth.updateUser>[0] = {};
+  const emailTrim = updates.email?.trim();
+  const nameTrim = updates.name?.trim();
+  if (emailTrim !== undefined && emailTrim !== '') payload.email = emailTrim;
+  if (nameTrim !== undefined) payload.data = { name: nameTrim, full_name: nameTrim };
+  if (Object.keys(payload).length === 0) return { data: null, error: undefined };
+  return supabase.auth.updateUser(payload);
 }
 
 export async function updatePassword(newPassword: string) {

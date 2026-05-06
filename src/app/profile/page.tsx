@@ -430,13 +430,24 @@ export default function ProfilePage() {
         )}
 
         {/* Back to App */}
-        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+        <div style={{ textAlign: 'center', marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Link
+            href="/dashboard/settings"
+            style={{
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+            }}
+          >
+            Vollständige Einstellungen (Konto, Timer-Design) →
+          </Link>
           <Link
             href="/"
             style={{
               color: 'var(--accent)',
               textDecoration: 'none',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
             }}
           >
             ← Zurück zum TimeTracker
