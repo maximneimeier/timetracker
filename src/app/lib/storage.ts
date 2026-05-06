@@ -1,28 +1,24 @@
 'use client';
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-let supabase: ReturnType<typeof createClient> | null = null;
-
-function getSupabase(): any {
-  if (!supabase) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
+function getSupabase() {
   return supabase;
 }
 
 // Check if user is authenticated
 export async function isAuthenticated(): Promise<boolean> {
-  const { data } = await getSupabase().auth.getSession();
+  const sb = getSupabase();
+  if (!sb) return false;
+  const { data } = await sb.auth.getSession();
   return !!data.session;
 }
 
 // Get current user ID
 export async function getCurrentUserId(): Promise<string | null> {
-  const { data } = await getSupabase().auth.getSession();
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data } = await sb.auth.getSession();
   return data.session?.user?.id || null;
 }
 
@@ -111,7 +107,8 @@ export async function migrateLocalDataToSupabase(userId: string): Promise<void> 
   if (localStorage.getItem(migrationKey)) return; // Already migrated
 
   const sb = getSupabase();
-  
+  if (!sb) return;
+
   // Get local data
   const localProjects: LegacyProject[] = JSON.parse(localStorage.getItem('timetracker_projects') || '[]');
   const localEntries: LegacyTimeEntry[] = JSON.parse(localStorage.getItem('timetracker_entries') || '[]');
@@ -189,9 +186,9 @@ export async function getProjects(): Promise<Project[]> {
   if (typeof window === 'undefined') return [];
 
   const userId = await getCurrentUserId();
-  if (userId) {
+  const sb = getSupabase();
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       const { data, error } = await sb
         .from('projects')
         .select('*')
@@ -221,9 +218,9 @@ export async function addProject(name: string): Promise<Project> {
   const userId = await getCurrentUserId();
   const timestamp = new Date().toISOString();
 
-  if (userId) {
+  const sb = getSupabase();
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       const { data, error } = await sb
         .from('projects')
         .insert({ user_id: userId, name })
@@ -259,10 +256,10 @@ export async function updateProject(id: string, updates: Partial<Pick<Project, '
   if (typeof window === 'undefined') return null;
 
   const userId = await getCurrentUserId();
-  
-  if (userId) {
+  const sb = getSupabase();
+
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       const { data, error } = await sb
         .from('projects')
         .update(updates)
@@ -299,10 +296,10 @@ export async function deleteProject(id: string): Promise<void> {
   if (typeof window === 'undefined') return;
 
   const userId = await getCurrentUserId();
+  const sb = getSupabase();
 
-  if (userId) {
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       // Delete related time entries first
       await sb.from('time_entries').delete().eq('project_id', id).eq('user_id', userId);
       // Delete project
@@ -330,9 +327,9 @@ export async function getEntries(): Promise<TimeEntry[]> {
   if (typeof window === 'undefined') return [];
 
   const userId = await getCurrentUserId();
-  if (userId) {
+  const sb = getSupabase();
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       const { data, error } = await sb
         .from('time_entries')
         .select('*')
@@ -367,9 +364,9 @@ export async function addEntry(entry: Omit<TimeEntry, 'id' | 'created_at' | 'use
   const userId = await getCurrentUserId();
   const timestamp = new Date().toISOString();
 
-  if (userId) {
+  const sb = getSupabase();
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       const { data, error } = await sb
         .from('time_entries')
         .insert({ ...entry, user_id: userId })
@@ -416,10 +413,10 @@ export async function updateEntry(id: string, updates: Partial<Omit<TimeEntry, '
   if (typeof window === 'undefined') return null;
 
   const userId = await getCurrentUserId();
+  const sb = getSupabase();
 
-  if (userId) {
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       const { data, error } = await sb
         .from('time_entries')
         .update(updates)
@@ -465,10 +462,10 @@ export async function deleteEntry(id: string): Promise<void> {
   if (typeof window === 'undefined') return;
 
   const userId = await getCurrentUserId();
+  const sb = getSupabase();
 
-  if (userId) {
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       await sb.from('time_entries').delete().eq('id', id).eq('user_id', userId);
       return;
     } catch {
@@ -489,9 +486,9 @@ export async function getSettings(): Promise<Settings> {
   if (typeof window === 'undefined') return { hourly_rate: 150, user_id: '' };
 
   const userId = await getCurrentUserId();
-  if (userId) {
+  const sb = getSupabase();
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       const { data, error } = await sb
         .from('settings')
         .select('*')
@@ -513,10 +510,10 @@ export async function updateSettings(settings: Omit<Settings, 'id' | 'user_id'>)
   if (typeof window === 'undefined') return;
 
   const userId = await getCurrentUserId();
+  const sb = getSupabase();
 
-  if (userId) {
+  if (userId && sb) {
     try {
-      const sb = getSupabase();
       const { data: existing } = await sb.from('settings').select('id').eq('user_id', userId).single();
       
       if (existing) {
