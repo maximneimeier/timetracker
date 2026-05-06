@@ -39,7 +39,7 @@ function LogoMark() {
         width: 22,
         height: 22,
         borderRadius: 5,
-        background: 'linear-gradient(135deg, var(--accent) 0%, #9b72f2 100%)',
+        background: 'linear-gradient(135deg, var(--accent) 0%, #38bdf8 100%)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
