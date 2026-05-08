@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-04-29T08:00:00+02:00",
+  "cron_id": "03ee2cdd-f88c-40e6-97eb-7edfef7c4f0b",
+  "audit_type": "daily_security_audit",
+  "result": {
+    "ts": 1777442558844,
+    "summary": {
+      "critical": 0,
+      "warn": 1,
+      "info": 1
+    },
+    "findings": [
+      {
+        "checkId": "summary.attack_surface",
+        "severity": "info",
+        "title": "Attack surface summary",
+        "detail": "groups: open=0, allowlist=2\ntools.elevated: enabled\nhooks.webhooks: disabled\nhooks.internal: enabled\nbrowser control: enabled\ntrust model: personal assistant (one trusted operator boundary), not hostile multi-tenant on one shared gateway"
+      },
+      {
+        "checkId": "gateway.trusted_proxies_missing",
+        "severity": "warn",
+        "title": "Reverse proxy headers are not trusted",
+        "detail": "gateway.bind is loopback and gateway.trustedProxies is empty. If you expose the Control UI through a reverse proxy, configure trusted proxies so local-client checks cannot be spoofed.",
+        "remediation": "Set gateway.trustedProxies to your proxy IPs or keep the Control UI local-only."
+      }
+    ],
+    "deep": {
+      "gateway": {
+        "attempted": true,
+        "url": "ws://127.0.0.1:18789",
+        "ok": true,
+        "error": null,
+        "close": null
+      }
+    },
+    "secretDiagnostics": []
+  },
+  "notes": [
+    "Keine kritischen Probleme gefunden",
+    "Warnung: Trusted Proxies nicht konfiguriert (nur relevant bei Reverse Proxy)",
+    "OpenClaw Version: 2026.4.12 (Config geschrieben von 2026.4.15)"
+  ]
+}
